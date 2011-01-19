@@ -1,11 +1,7 @@
 package com.bukkit.timberjaw.spawncontrol;
 
-import org.bukkit.Location;
-import org.bukkit.Player;
 import org.bukkit.event.player.PlayerChatEvent;
-import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
-import org.bukkit.event.player.PlayerMoveEvent;
 
 /**
  * Handle events for all Player related events
@@ -18,5 +14,8 @@ public class SCPlayerListener extends PlayerListener {
         plugin = instance;
     }
 
-    //Insert Player related code here
+    public void onPlayerCommand(PlayerChatEvent e)
+    {
+    	System.out.println("Command: " + e.getMessage());
+    }
 }

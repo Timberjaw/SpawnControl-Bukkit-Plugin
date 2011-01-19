@@ -24,9 +24,8 @@ package com.bukkit.timberjaw.spawncontrol;
  * 3. Resetting REMOVES the specified spawn/home
  */
 
-import java.io.File;
-import java.util.HashMap;
-import org.bukkit.Player;
+import java.io.*;
+import java.util.logging.*;
 import org.bukkit.Server;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
@@ -34,6 +33,7 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import java.sql.*;
 
 /**
  * SpawnControl for Bukkit
@@ -42,46 +42,94 @@ import org.bukkit.plugin.PluginManager;
  */
 public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
-    private final SCBlockListener blockListener = new SCBlockListener(this);
-    private final HashMap<Player, Boolean> debugees = new HashMap<Player, Boolean>();
+    private Connection conn;
+    public static Logger log;
+    public final static String directory = "plugins/SpawnControl";
+    public final static String db = "jdbc:sqlite:" + SpawnControl.directory + File.separator + "spawncontrol.db";
 
     public SpawnControl(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
         // TODO: Place any custom initialisation code here
-
-        // NOTE: Event registration should be done in onEnable not here as all events are unregistered when a plugin is disabled
     }
-
     
-
-    public void onEnable() {
-        // TODO: Place any custom enable code here including the registration of any events
-
-        // Register our events
-        PluginManager pm = getServer().getPluginManager();
-        
-
-        // EXAMPLE: Custom code, here we just output some info so we can check all is well
-        PluginDescriptionFile pdfFile = this.getDescription();
-        System.out.println( pdfFile.getName() + " version " + pdfFile.getVersion() + " is enabled!" );
-    }
-    public void onDisable() {
-        // TODO: Place any custom disable code here
-
-        // NOTE: All registered events are automatically unregistered when a plugin is disabled
-
-        // EXAMPLE: Custom code, here we just output some info so we can check all is well
-        System.out.println("Goodbye world!");
-    }
-    public boolean isDebugging(final Player player) {
-        if (debugees.containsKey(player)) {
-            return debugees.get(player);
-        } else {
-            return false;
+    private void initDB()
+    {
+    	ResultSet rs = null;
+    	Statement st = null;
+    	
+    	try
+        {
+    		Class.forName("org.sqlite.JDBC");
+        	conn = DriverManager.getConnection(db);
+        	
+        	DatabaseMetaData dbm = conn.getMetaData();
+            rs = dbm.getTables(null, null, "players", null);
+            if (!rs.next())
+            {
+            	// Create table
+            	System.out.println("Table 'players' not found.");
+            	
+            	conn.setAutoCommit(false);
+                st = conn.createStatement();
+                st.executeUpdate("make mah player tabel");
+                conn.commit();
+            }
+            
+            rs = dbm.getTables(null, null, "groups", null);
+            if (!rs.next())
+            {
+            	// Create table
+            	System.out.println("Table 'groups' not found.");
+            }
+            
+            rs = dbm.getTables(null, null, "settings", null);
+            if (!rs.next())
+            {
+            	// Create table
+            	System.out.println("Table 'settings' not found.");
+            }
+        	
+	        rs.close();
+	        conn.close();
+        }
+        catch(SQLException e)
+        {
+        	// ERROR
+        	System.out.println("DB ERROR - " + e.getMessage());
+        }
+        catch(Exception e)
+        {
+        	// Error
+        	System.out.println("Error: " + e.getMessage());
+        	e.printStackTrace();
         }
     }
 
-    public void setDebugging(final Player player, final boolean value) {
-        debugees.put(player, value);
+    public void onEnable() {
+    	log = Logger.getLogger("Minecraft");
+    	
+        if (!new File(directory).exists()) {
+            try {
+                (new File(directory)).mkdir();
+            } catch (Exception e) {
+                SpawnControl.log.log(Level.SEVERE, "[SPAWNCONTROL]: Unable to create spawncontrol/ directory.");
+            }
+        }
+        
+        this.initDB();
+        
+        // Register our events
+        PluginManager pm = getServer().getPluginManager();
+        pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.Normal, this);
+        
+        // Enable message
+        PluginDescriptionFile pdfFile = this.getDescription();
+        System.out.println( pdfFile.getName() + " version " + pdfFile.getVersion() + " is enabled!" );
+    }
+    
+    public void onDisable() {
+        // Disable message
+    	PluginDescriptionFile pdfFile = this.getDescription();
+    	System.out.println( pdfFile.getName() + " version " + pdfFile.getVersion() + " is disabled!" );
     }
 }
