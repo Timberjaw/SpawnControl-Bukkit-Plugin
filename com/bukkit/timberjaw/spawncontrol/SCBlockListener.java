@@ -7,10 +7,8 @@ import org.bukkit.event.block.BlockListener;
  * @author Timberjaw
  */
 public class SCBlockListener extends BlockListener {
-    private final SpawnControl plugin;
 
     public SCBlockListener(final SpawnControl plugin) {
-        this.plugin = plugin;
     }
 
     //put all Block related code here
