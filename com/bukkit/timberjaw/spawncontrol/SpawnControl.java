@@ -369,7 +369,7 @@ public class SpawnControl extends JavaPlugin {
     	// Check for spawn
     	if(!this.activeGroupIds.contains(group))
     	{
-    		if(!this.getGroupData(group))
+    		if(this.getGroupData(group))
     		{
     			// Found spawn!
     			return this.groupSpawns.get(this.activeGroupIds.get(group));
