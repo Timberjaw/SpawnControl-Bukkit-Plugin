@@ -93,10 +93,10 @@ public class SpawnControl extends JavaPlugin {
             	
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
-                st.executeUpdate("CREATE TABLE `players` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
+                st.execute("CREATE TABLE `players` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
                 		+"`x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
-                		+"`updated` INTEGER, `updated_by` INTEGER);"
-                		+"CREATE UNIQUE INDEX playerIndex on `players` (`name`);");
+                		+"`updated` INTEGER, `updated_by` varchar(32));");
+                st.execute("CREATE UNIQUE INDEX playerIndex on `players` (`name`);");
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'players' created.");
@@ -110,10 +110,10 @@ public class SpawnControl extends JavaPlugin {
             	
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
-                st.executeUpdate("CREATE TABLE `groups` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
+                st.execute("CREATE TABLE `groups` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
                 		+"`x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
-                		+"`updated` INTEGER, `updated_by` INTEGER);"
-                		+"CREATE UNIQUE INDEX groupIndex on `groups` (`name`);");
+                		+"`updated` INTEGER, `updated_by` varchar(32));");
+                st.execute("CREATE UNIQUE INDEX groupIndex on `groups` (`name`);");
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'groups' created.");
@@ -261,7 +261,7 @@ public class SpawnControl extends JavaPlugin {
 			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(db);
 			conn.setAutoCommit(false);
-			ps = conn.prepareStatement("INSERT INTO `players` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
+			ps = conn.prepareStatement("REPLACE INTO `players` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
 			ps.setString(1, name);
 			ps.setDouble(2, l.getX());
 			ps.setDouble(3, l.getY());
@@ -327,7 +327,7 @@ public class SpawnControl extends JavaPlugin {
 			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(db);
 			conn.setAutoCommit(false);
-			ps = conn.prepareStatement("INSERT INTO `groups` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
+			ps = conn.prepareStatement("REPLACE INTO `groups` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
 			ps.setString(1, group);
 			ps.setDouble(2, l.getX());
 			ps.setDouble(3, l.getY());
