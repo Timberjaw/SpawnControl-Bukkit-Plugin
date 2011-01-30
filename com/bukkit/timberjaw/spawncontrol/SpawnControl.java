@@ -85,6 +85,8 @@ public class SpawnControl extends JavaPlugin {
         	conn = DriverManager.getConnection(db);
         	
         	DatabaseMetaData dbm = conn.getMetaData();
+        	
+        	// Check players table
             rs = dbm.getTables(null, null, "players", null);
             if (!rs.next())
             {
@@ -102,6 +104,7 @@ public class SpawnControl extends JavaPlugin {
                 log.info("[SpawnControl]: Table 'players' created.");
             }
             
+            // Check groups table
             rs = dbm.getTables(null, null, "groups", null);
             if (!rs.next())
             {
@@ -119,6 +122,7 @@ public class SpawnControl extends JavaPlugin {
                 log.info("[SpawnControl]: Table 'groups' created.");
             }
             
+            // Check settings table
             rs = dbm.getTables(null, null, "settings", null);
             if (!rs.next())
             {
@@ -128,11 +132,22 @@ public class SpawnControl extends JavaPlugin {
         	
 	        rs.close();
 	        conn.close();
+	        
+	        // Check global spawn
+	    	if(!this.activeGroupIds.contains("scglobal"))
+	    	{
+	    		if(!this.getGroupData("scglobal"))
+	    		{
+	    			// No group spawn available, use global
+	    			log.info("[SpawnControl]: No global spawn found, setting global spawn to world spawn.");
+	    			this.setGroupSpawn("scglobal", this.getServer().getWorlds()[0].getSpawnLocation(), "initDB");
+	    		}
+	    	}
         }
         catch(SQLException e)
         {
         	// ERROR
-        	System.out.println("DB ERROR - " + e.getMessage());
+        	System.out.println("[initDB] DB ERROR - " + e.getMessage() + " | SQLState: " + e.getSQLState() + " | Error Code: " + e.getErrorCode());
         }
         catch(Exception e)
         {
@@ -144,6 +159,14 @@ public class SpawnControl extends JavaPlugin {
 
     public void onEnable() {
     	log = Logger.getLogger("Minecraft");
+    	
+    	// Initialize active player ids and homes
+        this.activePlayerIds = new Hashtable<String,Integer>();
+        this.homes = new Hashtable<Integer,Location>();
+        
+        // Initialize active group ids and group spawns
+        this.activeGroupIds = new Hashtable<String,Integer>();
+        this.groupSpawns = new Hashtable<Integer,Location>();
     	
     	// Make sure we have a local folder for our database and such
         if (!new File(directory).exists()) {
@@ -177,14 +200,6 @@ public class SpawnControl extends JavaPlugin {
         
         // Get player join
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
-        
-        // Initialize active player ids and homes
-        this.activePlayerIds = new Hashtable<String,Integer>();
-        this.homes = new Hashtable<Integer,Location>();
-        
-        // Initialize active group ids and group spawns
-        this.activeGroupIds = new Hashtable<String,Integer>();
-        this.groupSpawns = new Hashtable<Integer,Location>();
         
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -279,7 +294,7 @@ public class SpawnControl extends JavaPlugin {
         catch(SQLException e)
         {
         	// ERROR
-        	System.out.println("DB ERROR - " + e.getMessage());
+        	System.out.println("[setHome] DB ERROR - " + e.getMessage() + " | SQLState: " + e.getSQLState() + " | Error Code: " + e.getErrorCode());
         }
         catch(Exception e)
         {
@@ -345,7 +360,7 @@ public class SpawnControl extends JavaPlugin {
         catch(SQLException e)
         {
         	// ERROR
-        	System.out.println("DB ERROR - " + e.getMessage());
+        	System.out.println("[setGroupSpawn] DB ERROR - " + e.getMessage() + " | SQLState: " + e.getSQLState() + " | Error Code: " + e.getErrorCode());
         }
         catch(Exception e)
         {
@@ -393,11 +408,11 @@ public class SpawnControl extends JavaPlugin {
         {
     		Class.forName("org.sqlite.JDBC");
         	conn = DriverManager.getConnection(db);
-        	conn.setAutoCommit(false);
+        	//conn.setAutoCommit(false);
         	ps = conn.prepareStatement("SELECT * FROM `players` WHERE `name` = ?");
             ps.setString(1, name);
             rs = ps.executeQuery();
-            conn.commit();
+            //conn.commit();
              
              while (rs.next()) {
                  success = true;
@@ -410,7 +425,7 @@ public class SpawnControl extends JavaPlugin {
         catch(SQLException e)
         {
         	// ERROR
-        	System.out.println("DB ERROR - " + e.getMessage());
+        	System.out.println("[getPlayerData] DB ERROR - " + e.getMessage() + " | SQLState: " + e.getSQLState() + " | Error Code: " + e.getErrorCode());
         }
         catch(Exception e)
         {
@@ -435,11 +450,11 @@ public class SpawnControl extends JavaPlugin {
         {
     		Class.forName("org.sqlite.JDBC");
         	conn = DriverManager.getConnection(db);
-        	conn.setAutoCommit(false);
+        	//conn.setAutoCommit(false);
         	ps = conn.prepareStatement("SELECT * FROM `groups` WHERE `name` = ?");
             ps.setString(1, name);
             rs = ps.executeQuery();
-            conn.commit();
+            //conn.commit();
              
              while (rs.next()) {
                  success = true;
@@ -452,7 +467,7 @@ public class SpawnControl extends JavaPlugin {
         catch(SQLException e)
         {
         	// ERROR
-        	System.out.println("DB ERROR - " + e.getMessage());
+        	System.out.println("[getGroupData] DB ERROR - " + e.getMessage() + " | SQLState: " + e.getSQLState() + " | Error Code: " + e.getErrorCode());
         }
         catch(Exception e)
         {
