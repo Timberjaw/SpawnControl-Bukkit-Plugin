@@ -53,7 +53,7 @@ public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
     private Connection conn;
     public static Logger log;
-    public final static String directory = "plugins/SpawnControl";
+    public final static String directory = "plugins" + File.separator + "SpawnControl";
     public final static String db = "jdbc:sqlite:" + SpawnControl.directory + File.separator + "spawncontrol.db";
     
     // Permissions
@@ -481,7 +481,7 @@ public class SpawnControl extends JavaPlugin {
     
     public void importConfig()
     {
-    	File cf = new File(directory+"/spawncontrol-players.properties");
+    	File cf = new File(directory+ File.separator + "spawncontrol-players.properties");
     	
     	if(cf.exists())
     	{
@@ -540,7 +540,7 @@ public class SpawnControl extends JavaPlugin {
     
     public void importGroupConfig()
     {
-    	File cf = new File(directory+"/spawncontrol-groups.properties");
+    	File cf = new File(directory+ File.separator + "spawncontrol-groups.properties");
     	
     	if(cf.exists())
     	{
