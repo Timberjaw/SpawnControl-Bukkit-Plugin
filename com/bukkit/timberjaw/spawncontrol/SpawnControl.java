@@ -66,16 +66,27 @@ public class SpawnControl extends JavaPlugin {
     private Hashtable<Integer,Location> homes;
     private Hashtable<String,Integer> activeGroupIds;
     private Hashtable<Integer,Location> groupSpawns;
-    private Hashtable<String,Boolean> deadPlayers;
     
     // Settings
-    public boolean sRespawnOnJoin = false;
+    public static final class Settings {
+    	public static final int NO = 0;
+    	public static final int YES = 1;
+    	public static final int DEATH_NONE = 0;
+    	public static final int DEATH_HOME = 1;
+    	public static final int DEATH_GROUPSPAWN = 2;
+    	public static final int DEATH_GLOBALSPAWN = 3;
+    	public static final int JOIN_NONE = 0;
+    	public static final int JOIN_HOME = 1;
+    	public static final int JOIN_GROUPSPAWN = 2;
+    	public static final int JOIN_GLOBALSPAWN = 3;
+    }
 
     public SpawnControl(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
         // TODO: Place any custom initialisation code here
     }
     
+    // Initialize database
     private void initDB()
     {
     	ResultSet rs = null;
@@ -129,11 +140,26 @@ public class SpawnControl extends JavaPlugin {
             if (!rs.next())
             {
             	// Create table
-            	//System.out.println("[SpawnControl]: Table 'settings' not found.");
+            	System.out.println("[SpawnControl]: Table 'settings' not found, creating.");
+            	
+            	conn.setAutoCommit(false);
+                st = conn.createStatement();
+                st.execute("CREATE TABLE `settings` (`setting` varchar(32) PRIMARY KEY, `value` INT, "
+                		+"`updated` INTEGER, `updated_by` varchar(32));");
+                conn.commit();
+                
+                log.info("[SpawnControl]: Table 'settings' created.");
             }
         	
 	        rs.close();
 	        conn.close();
+	        
+            // Insert default settings
+	        this.setSetting("enable_home", Settings.YES);
+	        this.setSetting("enable_groupspawn", Settings.YES);
+	        this.setSetting("enable_globalspawn", Settings.YES);
+	        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN);
+	        this.setSetting("behavior_join", Settings.JOIN_NONE);
 	        
 	        // Check global spawn
 	    	if(!this.activeGroupIds.contains("scglobal"))
@@ -169,9 +195,6 @@ public class SpawnControl extends JavaPlugin {
         // Initialize active group ids and group spawns
         this.activeGroupIds = new Hashtable<String,Integer>();
         this.groupSpawns = new Hashtable<Integer,Location>();
-        
-        // Initialize dead player list
-        this.deadPlayers = new Hashtable<String,Boolean>();
     	
     	// Make sure we have a local folder for our database and such
         if (!new File(directory).exists()) {
@@ -220,29 +243,66 @@ public class SpawnControl extends JavaPlugin {
     	log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] unloaded" );
     }
     
-    // Mark player dead
-    public void markPlayerDead(String name)
+    // Get timestamp
+    public int getTimeStamp()
     {
-    	if(!this.isPlayerDead(name))
-    	{
-    		this.deadPlayers.put(name, true);
-    	}
+    	return (int) (System.currentTimeMillis() / 1000L);
     }
     
-    // Mark player alive
-    public void markPlayerAlive(String name)
+    // Get setting
+    public int getSetting(String name)
     {
-    	if(this.isPlayerDead(name))
-    	{
-    		SpawnControl.log.info("[SpawnControl] Marking '"+ name +"' alive.");
-    		this.deadPlayers.remove(name);
-    	}
+    	Connection conn = null;
+    	PreparedStatement ps = null;
+        ResultSet rs = null;
+        int value = -1;
+		
+		// Get from database
+		try
+        {
+    		Class.forName("org.sqlite.JDBC");
+        	conn = DriverManager.getConnection(db);
+        	ps = conn.prepareStatement("SELECT * FROM `settings` WHERE `setting` = ?");
+            ps.setString(1, name);
+            rs = ps.executeQuery();
+             
+            while (rs.next()) { value = rs.getInt("value"); }
+        	conn.close();
+        }
+        catch(Exception e)
+        {
+        	// Error
+        	SpawnControl.log.warning("[SpawnControl] DB Error: " + e.getMessage());
+        	e.printStackTrace();
+        }
+        
+        return value;
     }
     
-    // Check player status
-    public boolean isPlayerDead(String name)
+    // Set setting
+    public boolean setSetting(String name, int value)
     {
-    	return this.deadPlayers.containsKey(name);
+        boolean success = true;
+        
+        try
+        {
+	    	Class.forName("org.sqlite.JDBC");
+	    	Connection conn = DriverManager.getConnection(db);
+	    	conn.setAutoCommit(false);
+	        PreparedStatement ps = conn.prepareStatement("REPLACE INTO `settings` (`setting`,`value`) VALUES (?, ?);");
+	        ps.setString(1, name);
+	        ps.setInt(2, value);
+	        ps.execute();
+	        conn.commit();
+	        conn.close();
+        }
+        catch(Exception e)
+        {
+        	SpawnControl.log.severe("[SpawnControl] Failed to save setting '"+name+"' with value '"+value+"'");
+        	success = false;
+        }
+        
+    	return success;
     }
     
     // Spawn
@@ -272,6 +332,7 @@ public class SpawnControl extends JavaPlugin {
     		if(!this.getPlayerData(p.getName()))
     		{
     			// No home available, use global
+    			this.sendToSpawn(p);
     			return;
     		}
     	}
@@ -316,7 +377,7 @@ public class SpawnControl extends JavaPlugin {
 			ps.setDouble(4, l.getZ());
 			ps.setFloat(5, l.getYaw());
 			ps.setFloat(6, l.getPitch());
-			ps.setInt(7, (int)System.currentTimeMillis());
+			ps.setInt(7, this.getTimeStamp());
 			ps.setString(8, updatedBy);
 			ps.execute();
 			conn.commit();
@@ -354,6 +415,7 @@ public class SpawnControl extends JavaPlugin {
     		if(!this.getGroupData(group))
     		{
     			// No group spawn available, use global
+    			this.sendToSpawn(p);
     			return;
     		}
     	}
@@ -382,7 +444,7 @@ public class SpawnControl extends JavaPlugin {
 			ps.setDouble(4, l.getZ());
 			ps.setFloat(5, l.getYaw());
 			ps.setFloat(6, l.getPitch());
-			ps.setInt(7, (int)System.currentTimeMillis());
+			ps.setInt(7, this.getTimeStamp());
 			ps.setString(8, updatedBy);
 			ps.execute();
 			conn.commit();
