@@ -51,6 +51,7 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
+    private final SCEntityListener entityListener = new SCEntityListener(this);
     private Connection conn;
     public static Logger log;
     public final static String directory = "plugins/SpawnControl";
@@ -65,6 +66,7 @@ public class SpawnControl extends JavaPlugin {
     private Hashtable<Integer,Location> homes;
     private Hashtable<String,Integer> activeGroupIds;
     private Hashtable<Integer,Location> groupSpawns;
+    private Hashtable<String,Boolean> deadPlayers;
     
     // Settings
     public boolean sRespawnOnJoin = false;
@@ -167,6 +169,9 @@ public class SpawnControl extends JavaPlugin {
         // Initialize active group ids and group spawns
         this.activeGroupIds = new Hashtable<String,Integer>();
         this.groupSpawns = new Hashtable<Integer,Location>();
+        
+        // Initialize dead player list
+        this.deadPlayers = new Hashtable<String,Boolean>();
     	
     	// Make sure we have a local folder for our database and such
         if (!new File(directory).exists()) {
@@ -201,6 +206,9 @@ public class SpawnControl extends JavaPlugin {
         // Get player join
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
+        // Get player damage (used to detect death condition)
+        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Monitor, this);
+        
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
         log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] loaded" );
@@ -210,6 +218,31 @@ public class SpawnControl extends JavaPlugin {
         // Disable message
     	PluginDescriptionFile pdfFile = this.getDescription();
     	log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] unloaded" );
+    }
+    
+    // Mark player dead
+    public void markPlayerDead(String name)
+    {
+    	if(!this.isPlayerDead(name))
+    	{
+    		this.deadPlayers.put(name, true);
+    	}
+    }
+    
+    // Mark player alive
+    public void markPlayerAlive(String name)
+    {
+    	if(this.isPlayerDead(name))
+    	{
+    		SpawnControl.log.info("[SpawnControl] Marking '"+ name +"' alive.");
+    		this.deadPlayers.remove(name);
+    	}
+    }
+    
+    // Check player status
+    public boolean isPlayerDead(String name)
+    {
+    	return this.deadPlayers.containsKey(name);
     }
     
     // Spawn

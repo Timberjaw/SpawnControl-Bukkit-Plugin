@@ -190,6 +190,7 @@ public class SCPlayerListener extends PlayerListener {
     
     public void onPlayerJoin(PlayerEvent e)
     {
+    	SpawnControl.log.info("[SpawnControl] Player " + e.getPlayer().getName() + " joined with " + e.getPlayer().getHealth() + " health.");
     	if(Permissions.Security.getGroup(e.getPlayer().getName()).equalsIgnoreCase("default") && plugin.getHome(e.getPlayer().getName()) == null)
     	{
     		// Probably a new player
