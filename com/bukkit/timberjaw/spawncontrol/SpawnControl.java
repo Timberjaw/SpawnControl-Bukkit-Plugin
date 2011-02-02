@@ -230,7 +230,7 @@ public class SpawnControl extends JavaPlugin {
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
         // Get player damage (used to detect death condition)
-        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Monitor, this);
+        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Normal, this);
         
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();

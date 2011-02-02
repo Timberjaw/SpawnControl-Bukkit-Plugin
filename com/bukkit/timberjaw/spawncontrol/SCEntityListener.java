@@ -21,6 +21,11 @@ public class SCEntityListener extends EntityListener {
     
     public void onEntityDamage(EntityDamageEvent e)
     {
+    	if(e.isCancelled())
+    	{
+    		return;
+    	}
+    	
     	int db = plugin.getSetting("behavior_death");
     	if(db != SpawnControl.Settings.DEATH_NONE)
     	{
