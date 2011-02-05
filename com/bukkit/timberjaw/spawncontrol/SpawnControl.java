@@ -32,6 +32,8 @@ import java.sql.*;
 // Import bukkit packages
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
@@ -66,6 +68,9 @@ public class SpawnControl extends JavaPlugin {
     private Hashtable<Integer,Location> homes;
     private Hashtable<String,Integer> activeGroupIds;
     private Hashtable<Integer,Location> groupSpawns;
+    private Hashtable<String,Boolean> respawning;
+    private String lastSetting;
+    private int lastSettingValue;
     
     // Settings
     public static final class Settings {
@@ -136,10 +141,12 @@ public class SpawnControl extends JavaPlugin {
             }
             
             // Check settings table
+            boolean needSettings = false;
             rs = dbm.getTables(null, null, "settings", null);
             if (!rs.next())
             {
             	// Create table
+            	needSettings = true;
             	System.out.println("[SpawnControl]: Table 'settings' not found, creating.");
             	
             	conn.setAutoCommit(false);
@@ -154,12 +161,15 @@ public class SpawnControl extends JavaPlugin {
 	        rs.close();
 	        conn.close();
 	        
-            // Insert default settings
-	        this.setSetting("enable_home", Settings.YES);
-	        this.setSetting("enable_groupspawn", Settings.YES);
-	        this.setSetting("enable_globalspawn", Settings.YES);
-	        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN);
-	        this.setSetting("behavior_join", Settings.JOIN_NONE);
+	        if(needSettings)
+	        {
+	            // Insert default settings
+		        this.setSetting("enable_home", Settings.YES, "initDB");
+		        this.setSetting("enable_groupspawn", Settings.YES, "initDB");
+		        this.setSetting("enable_globalspawn", Settings.YES, "initDB");
+		        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN, "initDB");
+		        this.setSetting("behavior_join", Settings.JOIN_NONE, "initDB");
+	        }
 	        
 	        // Check global spawn
 	    	if(!this.activeGroupIds.contains("scglobal"))
@@ -195,6 +205,13 @@ public class SpawnControl extends JavaPlugin {
         // Initialize active group ids and group spawns
         this.activeGroupIds = new Hashtable<String,Integer>();
         this.groupSpawns = new Hashtable<Integer,Location>();
+        
+        // Intialize respawn list
+        this.respawning = new Hashtable<String,Boolean>();
+        
+        // Initialize last setting info
+        this.lastSetting = "";
+        this.lastSettingValue = -1;
     	
     	// Make sure we have a local folder for our database and such
         if (!new File(directory).exists()) {
@@ -224,13 +241,13 @@ public class SpawnControl extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         
         // Get player commands (used for /spawn, /home, etc)
-        pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.High, this);
+        //pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.High, this);
         
         // Get player join
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
         // Get player damage (used to detect death condition)
-        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Normal, this);
+        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
         
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -243,11 +260,24 @@ public class SpawnControl extends JavaPlugin {
     	log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] unloaded" );
     }
     
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
+    	return this.playerListener.onCommand(sender, command, commandLabel, args);
+    }
+    
     // Get timestamp
     public int getTimeStamp()
     {
     	return (int) (System.currentTimeMillis() / 1000L);
     }
+    
+    // Mark as respawning
+    public void markPlayerRespawning(String name) { this.markPlayerDoneRespawning(name); this.respawning.put(name, true); }
+    // Mark as done respawning
+    public void markPlayerDoneRespawning(String name) { this.respawning.remove(name); }
+    // Check to see if the player is respawning
+    public boolean isPlayerRespawning(String name) { return this.respawning.containsKey(name); }
+    
     
     // Get setting
     public int getSetting(String name)
@@ -256,6 +286,11 @@ public class SpawnControl extends JavaPlugin {
     	PreparedStatement ps = null;
         ResultSet rs = null;
         int value = -1;
+        
+        if(this.lastSetting.equals(name))
+        {
+        	return this.lastSettingValue;
+        }
 		
 		// Get from database
 		try
@@ -266,7 +301,7 @@ public class SpawnControl extends JavaPlugin {
             ps.setString(1, name);
             rs = ps.executeQuery();
              
-            while (rs.next()) { value = rs.getInt("value"); }
+            while (rs.next()) { value = rs.getInt("value"); this.lastSetting = name; this.lastSettingValue = value; }
         	conn.close();
         }
         catch(Exception e)
@@ -280,7 +315,7 @@ public class SpawnControl extends JavaPlugin {
     }
     
     // Set setting
-    public boolean setSetting(String name, int value)
+    public boolean setSetting(String name, int value, String setter)
     {
         boolean success = true;
         
@@ -289,12 +324,20 @@ public class SpawnControl extends JavaPlugin {
 	    	Class.forName("org.sqlite.JDBC");
 	    	Connection conn = DriverManager.getConnection(db);
 	    	conn.setAutoCommit(false);
-	        PreparedStatement ps = conn.prepareStatement("REPLACE INTO `settings` (`setting`,`value`) VALUES (?, ?);");
+	        PreparedStatement ps = conn.prepareStatement("REPLACE INTO `settings` (`setting`,`value`,`updated`,`updated_by`) VALUES (?, ?, ?, ?);");
 	        ps.setString(1, name);
 	        ps.setInt(2, value);
+	        ps.setInt(3, this.getTimeStamp());
+	        ps.setString(4, setter);
 	        ps.execute();
 	        conn.commit();
 	        conn.close();
+	        
+	        if(this.lastSetting.equals(name))
+	        {
+	        	this.lastSetting = "";
+	        	this.lastSettingValue = -1;
+	        }
         }
         catch(Exception e)
         {

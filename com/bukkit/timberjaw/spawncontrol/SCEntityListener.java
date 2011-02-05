@@ -1,6 +1,7 @@
 package com.bukkit.timberjaw.spawncontrol;
 
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityListener;
@@ -23,6 +24,14 @@ public class SCEntityListener extends EntityListener {
     {
     	if(e.isCancelled())
     	{
+    		return;
+    	}
+    	
+    	if(e.getEntity() instanceof Player && plugin.isPlayerRespawning(((CraftPlayer)e.getEntity()).getName()))
+    	{
+    		((CraftPlayer)e.getEntity()).getHandle().fireTicks = 0;
+    		e.setCancelled(true);
+    		plugin.markPlayerDoneRespawning(((CraftPlayer)e.getEntity()).getName());
     		return;
     	}
     	
@@ -57,6 +66,14 @@ public class SCEntityListener extends EntityListener {
 	    				default:
 	    					plugin.sendToSpawn(p);
 	    					break;
+	    			}
+	    			
+	    			// Extinguish player if they are burning
+	    			if(((CraftPlayer)p).getHandle().fireTicks > 0)
+	    			{
+	    				SpawnControl.log.info("FireTicks: " + ((CraftPlayer)p).getHandle().fireTicks);
+	    				((CraftPlayer)p).getHandle().fireTicks = 0;
+	    				plugin.markPlayerRespawning(p.getName());
 	    			}
 	    			
 	    			// Drop items and clear inventory

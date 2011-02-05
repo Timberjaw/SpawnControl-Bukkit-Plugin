@@ -1,8 +1,9 @@
 package com.bukkit.timberjaw.spawncontrol;
 
 import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
 
@@ -20,27 +21,34 @@ public class SCPlayerListener extends PlayerListener {
         plugin = instance;
     }
 
-    public void onPlayerCommand(PlayerChatEvent e)
+    public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args)
     {
     	// Split the command in case it has parameters
-    	String[] cmd = e.getMessage().split(" ");
+    	String[] cmd = args;
+        String commandName = command.getName().toLowerCase();
+        Player p = null;
+        
+        if(sender instanceof Player)
+        {
+        	p = (Player)sender;
+        }
     	
     	// Sethome
-    	if(plugin.getSetting("enable_home") == SpawnControl.Settings.YES && cmd[0].equalsIgnoreCase("/sethome"))
+    	if(plugin.getSetting("enable_home") == SpawnControl.Settings.YES && commandName.equals("sethome"))
     	{
-    		String setter = e.getPlayer().getName();
+    		String setter = p.getName();;
     		String homeowner = setter;
-    		Location l = e.getPlayer().getLocation();
+    		Location l = p.getLocation();
     		
-    		if(cmd.length > 1 && !Permissions.Security.permission(e.getPlayer(), "SpawnControl.sethome.proxy"))
+    		if(cmd.length > 1 && !Permissions.Security.permission(p, "SpawnControl.sethome.proxy"))
     		{
     			// User is trying to set home for another user but they don't have permission
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
-    		else if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.sethome.basic"))
+    		else if(!Permissions.Security.permission(p, "SpawnControl.sethome.basic"))
     		{
     			// User is trying to set home but they don't have permission
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else
     		{
@@ -52,135 +60,135 @@ public class SCPlayerListener extends PlayerListener {
     			
 	    		if(plugin.setHome(homeowner, l, setter))
 	    		{
-	    			e.getPlayer().sendMessage("Home set successfully!");
+	    			p.sendMessage("Home set successfully!");
 	    		}
 	    		else
 	    		{
-	    			e.getPlayer().sendMessage("Could not set Home!");
+	    			p.sendMessage("Could not set Home!");
 	    		}
     		}
     		
-    		e.setCancelled(true);
+    		return true;
     	}
     	
     	// Home
-    	if(plugin.getSetting("enable_home") == SpawnControl.Settings.YES && cmd[0].equalsIgnoreCase("/home"))
+    	if(plugin.getSetting("enable_home") == SpawnControl.Settings.YES && commandName.equals("home"))
     	{
     		// Send player home
-    		if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.home.basic"))
+    		if(!Permissions.Security.permission(p, "SpawnControl.home.basic"))
     		{
     			// User doesn't have access to this command
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else
     		{
-	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+e.getPlayer().getName()+" to home.");
-	        	plugin.sendHome(e.getPlayer());
+	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to home.");
+	        	plugin.sendHome(p);
     		}
-        	e.setCancelled(true);
+        	return true;
     	}
     	
     	// Spawn (globalspawn)
-    	if(plugin.getSetting("enable_globalspawn") == SpawnControl.Settings.YES && (cmd[0].equalsIgnoreCase("/spawn") || cmd[0].equalsIgnoreCase("/globalspawn")))
+    	if(plugin.getSetting("enable_globalspawn") == SpawnControl.Settings.YES && (commandName.equals("spawn") || commandName.equals("globalspawn")))
     	{
     		// Send player to spawn
-    		if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.spawn.use"))
+    		if(!Permissions.Security.permission(p, "SpawnControl.spawn.use"))
     		{
     			// User doesn't have access to this command
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else
     		{
-	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+e.getPlayer().getName()+" to spawn.");
-	        	plugin.sendToSpawn(e.getPlayer());
+	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to spawn.");
+	        	plugin.sendToSpawn(p);
     		}
-        	e.setCancelled(true);
+        	return true;
     	}
     	
     	// Set spawn (globalspawn)
-    	if(plugin.getSetting("enable_globalspawn") == SpawnControl.Settings.YES && (cmd[0].equalsIgnoreCase("/setspawn") || cmd[0].equalsIgnoreCase("/setglobalspawn")))
+    	if(plugin.getSetting("enable_globalspawn") == SpawnControl.Settings.YES && (commandName.equals("setspawn") || commandName.equals("setglobalspawn")))
     	{
     		// Set global spawn
-    		if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.spawn.set"))
+    		if(!Permissions.Security.permission(p, "SpawnControl.spawn.set"))
     		{
     			// User doesn't have access to this command
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else
     		{
 	    		SpawnControl.log.info("[SpawnControl] Attempting to set global spawn.");
-	        	if(plugin.setSpawn(e.getPlayer().getLocation(), e.getPlayer().getName()))
+	        	if(plugin.setSpawn(p.getLocation(), p.getName()))
 	        	{
-	        		e.getPlayer().sendMessage("Global spawn set successfully!");
+	        		p.sendMessage("Global spawn set successfully!");
 	        	}
 	        	else
 	        	{
-	        		e.getPlayer().sendMessage("Could not set global spawn.");
+	        		p.sendMessage("Could not set global spawn.");
 	        	}
     		}
-        	e.setCancelled(true);
+        	return true;
     	}
     	
     	// Setgroupspawn
-    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (cmd[0].equalsIgnoreCase("/setgroupspawn") || cmd[0].equalsIgnoreCase("/setgroupspawn")))
+    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (commandName.equals("setgroupspawn") || commandName.equals("setgroupspawn")))
     	{
     		String group = null;
     		
     		// Set group spawn
-    		if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.groupspawn.set"))
+    		if(!Permissions.Security.permission(p, "SpawnControl.groupspawn.set"))
     		{
     			// User doesn't have access to this command
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else if(!(cmd.length > 1))
     		{
     			// User didn't specify a group
-    			e.getPlayer().sendMessage("Command format: /setgroupspawn [group]");
+    			p.sendMessage("Command format: /setgroupspawn [group]");
     		}
     		else
     		{
     			group = cmd[1];
 	    		SpawnControl.log.info("[SpawnControl] Setting group spawn for '"+group+"'.");
-	        	if(plugin.setGroupSpawn(group, e.getPlayer().getLocation(), e.getPlayer().getName()))
+	        	if(plugin.setGroupSpawn(group, p.getLocation(), p.getName()))
 	        	{
-	        		e.getPlayer().sendMessage("Group spawn for "+group+" set successfully!");
+	        		p.sendMessage("Group spawn for "+group+" set successfully!");
 	        	}
 	        	else
 	        	{
-	        		e.getPlayer().sendMessage("Could not set group spawn for "+group+".");
+	        		p.sendMessage("Could not set group spawn for "+group+".");
 	        	}
     		}
-        	e.setCancelled(true);
+        	return true;
     	}
     	
     	// Groupspawn
-    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (cmd[0].equalsIgnoreCase("/groupspawn") || cmd[0].equalsIgnoreCase("/groupspawn")))
+    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (commandName.equals("groupspawn") || commandName.equals("groupspawn")))
     	{
     		// Send player to group spawn
-    		if(!Permissions.Security.permission(e.getPlayer(), "SpawnControl.groupspawn.use"))
+    		if(!Permissions.Security.permission(p, "SpawnControl.groupspawn.use"))
     		{
     			// User doesn't have access to this command
-    			e.getPlayer().sendMessage("You don't have permission to do that.");
+    			p.sendMessage("You don't have permission to do that.");
     		}
     		else
     		{
     			// Get group spawn for player
-    			String group = Permissions.Security.getGroup(e.getPlayer().getName());
-	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+e.getPlayer().getName()+" to group spawn.");
-	        	plugin.sendToGroupSpawn(group, e.getPlayer());
+    			String group = Permissions.Security.getGroup(p.getName());
+	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to group spawn.");
+	        	plugin.sendToGroupSpawn(group, p);
     		}
-        	e.setCancelled(true);
+        	return true;
     	}
     	
     	// Check settings
     	
     	// Set setting
-    	if(cmd[0].equalsIgnoreCase("/sc_config") && Permissions.Security.permission(e.getPlayer(), "SpawnControl.config"))
+    	if(commandName.equals("sc_config") && Permissions.Security.permission(p, "SpawnControl.config"))
     	{
     		if(cmd.length < 3)
     		{
     			// Command format is wrong
-    			e.getPlayer().sendMessage("Command format: /sc_config [setting] [value]");
+    			p.sendMessage("Command format: /sc_config [setting] [value]");
     		}
     		else
     		{
@@ -188,7 +196,7 @@ public class SCPlayerListener extends PlayerListener {
 	    		if(plugin.getSetting(cmd[1]) < 0)
 	    		{
 	    			// Bad setting key
-	    			e.getPlayer().sendMessage("Unknown configuration value.");
+	    			p.sendMessage("Unknown configuration value.");
 	    		}
 	    		else
 	    		{
@@ -199,46 +207,48 @@ public class SCPlayerListener extends PlayerListener {
 	    				
 	    				if(tmpval < 0)
 	    				{
-	    					e.getPlayer().sendMessage("Value must be >= 0.");
+	    					p.sendMessage("Value must be >= 0.");
 	    				}
 	    				else
 	    				{
 	    					// Save
-	    					if(!plugin.setSetting(cmd[1], tmpval))
+	    					if(!plugin.setSetting(cmd[1], tmpval, p.getName()))
 	    					{
-	    						e.getPlayer().sendMessage("Could not save value for '"+cmd[1]+"'!");
+	    						p.sendMessage("Could not save value for '"+cmd[1]+"'!");
 	    					}
 	    					else
 	    					{
-	    						e.getPlayer().sendMessage("Saved value for '"+cmd[1]+"'.");
+	    						p.sendMessage("Saved value for '"+cmd[1]+"'.");
 	    					}
 	    				}
 	    			}
 	    			catch(Exception ex)
 	    			{
 	    				// Bad number
-	    				e.getPlayer().sendMessage("Couldn't read value.");
+	    				p.sendMessage("Couldn't read value.");
 	    			}
 	    		}
     		}
-    		e.setCancelled(true);
+    		return true;
     	}
     	
     	// Import config
-    	if(cmd[0].equalsIgnoreCase("/scimportconfig") && Permissions.Security.permission(e.getPlayer(), "SpawnControl.import"))
+    	if(commandName.equals("scimportconfig") && Permissions.Security.permission(p, "SpawnControl.import"))
     	{
     		SpawnControl.log.info("[SpawnControl] Attempting to import player configuration file.");
     		plugin.importConfig();
-    		e.setCancelled(true);
+    		return true;
     	}
     	
     	// Import group config
-    	if(cmd[0].equalsIgnoreCase("/scimportgroupconfig") && Permissions.Security.permission(e.getPlayer(), "SpawnControl.import"))
+    	if(commandName.equals("scimportgroupconfig") && Permissions.Security.permission(p, "SpawnControl.import"))
     	{
     		SpawnControl.log.info("[SpawnControl] Attempting to import group configuration file.");
     		plugin.importGroupConfig();
-    		e.setCancelled(true);
+    		return true;
     	}
+    	
+    	return false;
     }
     
     public void onPlayerJoin(PlayerEvent e)

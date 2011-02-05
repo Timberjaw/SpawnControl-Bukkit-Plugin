@@ -1,3 +1,41 @@
 name: SpawnControl
 main: com.bukkit.timberjaw.spawncontrol.SpawnControl
-version: 0.3.1
+version: 0.4
+commands:
+  setspawn:
+    description: Sets the global spawn
+    usage: /<command>
+  spawn:
+    description: Respawns you at the global spawn
+    usage: /<command>
+  setgroupspawn:
+    description: Sets the group spawn
+    usage: |
+        Incorrect usage of command /<command>. Examples:
+           /<command> Admins - sets the group spawn for the 'Admins' group
+  groupspawn:
+    description: Returns you to the group spawn
+    usage: |
+           Incorrect usage of command /<command>. Examples:
+           /<command> - respawns you at your primary group spawn
+           /<command> Admins - respawns you at the 'Admins' group spawn
+  sethome:
+    description: Sets your home
+    usage: |
+        Incorrect usage of command /<command>. Examples:
+           /<command> - sets your home to your current location
+           /<command> Bob - sets Bob's home to your current location            
+  home:
+    description: Respawns you at your home
+    usage: /<command>
+  sc_config:
+    description: Modifies SpawnControl configuration variables
+    usage: |
+        Incorrect usage of command /<command>. Examples:
+           /<command> setting value - sets [setting] to [value]
+  scimportconfig:
+    description: Imports player homes from SpawnControl hMod
+    usage: /<command>  
+  scimportgroupconfig:
+    description: Imports group spawns from SpawnControl hMod
+    usage: /<command>
