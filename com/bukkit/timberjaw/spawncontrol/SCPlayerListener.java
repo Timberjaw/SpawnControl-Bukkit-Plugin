@@ -40,7 +40,7 @@ public class SCPlayerListener extends PlayerListener {
     		String homeowner = setter;
     		Location l = p.getLocation();
     		
-    		if(cmd.length > 1 && !Permissions.Security.permission(p, "SpawnControl.sethome.proxy"))
+    		if(cmd.length > 0 && !Permissions.Security.permission(p, "SpawnControl.sethome.proxy"))
     		{
     			// User is trying to set home for another user but they don't have permission
     			p.sendMessage("You don't have permission to do that.");
@@ -52,10 +52,10 @@ public class SCPlayerListener extends PlayerListener {
     		}
     		else
     		{
-    			if(cmd.length > 1)
+    			if(cmd.length > 0)
     			{
     				// Setting home for different player
-    				homeowner = cmd[1];
+    				homeowner = cmd[0];
     			}
     			
 	    		if(plugin.setHome(homeowner, l, setter))
@@ -130,7 +130,7 @@ public class SCPlayerListener extends PlayerListener {
     	}
     	
     	// Setgroupspawn
-    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (commandName.equals("setgroupspawn") || commandName.equals("setgroupspawn")))
+    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && commandName.equals("setgroupspawn"))
     	{
     		String group = null;
     		
@@ -140,14 +140,14 @@ public class SCPlayerListener extends PlayerListener {
     			// User doesn't have access to this command
     			p.sendMessage("You don't have permission to do that.");
     		}
-    		else if(!(cmd.length > 1))
+    		else if(!(cmd.length > 0))
     		{
     			// User didn't specify a group
     			p.sendMessage("Command format: /setgroupspawn [group]");
     		}
     		else
     		{
-    			group = cmd[1];
+    			group = cmd[0];
 	    		SpawnControl.log.info("[SpawnControl] Setting group spawn for '"+group+"'.");
 	        	if(plugin.setGroupSpawn(group, p.getLocation(), p.getName()))
 	        	{
@@ -162,7 +162,7 @@ public class SCPlayerListener extends PlayerListener {
     	}
     	
     	// Groupspawn
-    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && (commandName.equals("groupspawn") || commandName.equals("groupspawn")))
+    	if(plugin.getSetting("enable_groupspawn") == SpawnControl.Settings.YES && commandName.equals("groupspawn"))
     	{
     		// Send player to group spawn
     		if(!Permissions.Security.permission(p, "SpawnControl.groupspawn.use"))
@@ -185,7 +185,7 @@ public class SCPlayerListener extends PlayerListener {
     	// Set setting
     	if(commandName.equals("sc_config") && Permissions.Security.permission(p, "SpawnControl.config"))
     	{
-    		if(cmd.length < 3)
+    		if(cmd.length < 2)
     		{
     			// Command format is wrong
     			p.sendMessage("Command format: /sc_config [setting] [value]");
@@ -193,7 +193,7 @@ public class SCPlayerListener extends PlayerListener {
     		else
     		{
 	    		// Verify setting
-	    		if(plugin.getSetting(cmd[1]) < 0)
+	    		if(plugin.getSetting(cmd[0]) < 0)
 	    		{
 	    			// Bad setting key
 	    			p.sendMessage("Unknown configuration value.");
@@ -214,11 +214,11 @@ public class SCPlayerListener extends PlayerListener {
 	    					// Save
 	    					if(!plugin.setSetting(cmd[1], tmpval, p.getName()))
 	    					{
-	    						p.sendMessage("Could not save value for '"+cmd[1]+"'!");
+	    						p.sendMessage("Could not save value for '"+cmd[0]+"'!");
 	    					}
 	    					else
 	    					{
-	    						p.sendMessage("Saved value for '"+cmd[1]+"'.");
+	    						p.sendMessage("Saved value for '"+cmd[0]+"'.");
 	    					}
 	    				}
 	    			}

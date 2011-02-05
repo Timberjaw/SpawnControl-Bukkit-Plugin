@@ -30,6 +30,7 @@ import java.util.logging.*;
 import java.sql.*;
 
 // Import bukkit packages
+
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
@@ -239,9 +240,6 @@ public class SpawnControl extends JavaPlugin {
         
         // Register our events
         PluginManager pm = getServer().getPluginManager();
-        
-        // Get player commands (used for /spawn, /home, etc)
-        //pm.registerEvent(Event.Type.PLAYER_COMMAND, playerListener, Priority.High, this);
         
         // Get player join
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
