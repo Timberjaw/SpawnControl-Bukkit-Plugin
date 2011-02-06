@@ -212,7 +212,7 @@ public class SCPlayerListener extends PlayerListener {
 	    				else
 	    				{
 	    					// Save
-	    					if(!plugin.setSetting(cmd[1], tmpval, p.getName()))
+	    					if(!plugin.setSetting(cmd[0], tmpval, p.getName()))
 	    					{
 	    						p.sendMessage("Could not save value for '"+cmd[0]+"'!");
 	    					}
