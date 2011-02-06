@@ -203,7 +203,7 @@ public class SCPlayerListener extends PlayerListener {
 	    			// Parse value
 	    			try
 	    			{
-	    				int tmpval = Integer.parseInt(cmd[2]);
+	    				int tmpval = Integer.parseInt(cmd[1]);
 	    				
 	    				if(tmpval < 0)
 	    				{
