@@ -194,7 +194,7 @@ public class SCPlayerListener extends PlayerListener {
     		else
     		{
 	    		// Verify setting
-	    		if(plugin.getSetting(cmd[0]) < 0)
+	    		if(!SpawnControl.validSettings.contains(cmd[0]))
 	    		{
 	    			// Bad setting key
 	    			p.sendMessage("Unknown configuration value.");
@@ -323,6 +323,12 @@ public class SCPlayerListener extends PlayerListener {
     		{
     			// Something has gone wrong
     			SpawnControl.log.warning("[SpawnControl] Could not find respawn for " + p.getName() + "!");
+    			return;
+    		}
+    		else
+    		{
+    			// Set world
+    			l.setWorld(plugin.getServer().getWorlds().get(0));
     		}
     		
     		e.setRespawnLocation(l);

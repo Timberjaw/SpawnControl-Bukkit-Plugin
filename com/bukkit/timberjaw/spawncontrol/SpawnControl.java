@@ -1,7 +1,9 @@
 package com.bukkit.timberjaw.spawncontrol;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.logging.*;
 import java.sql.*;
 
@@ -66,6 +68,10 @@ public class SpawnControl extends JavaPlugin {
     	public static final int GLOBALSPAWN_DEFAULT = 0;
     	public static final int GLOBALSPAWN_OVERRIDE = 1;
     }
+    
+    public static final List<String> validSettings = Arrays.asList(
+    		"enable_home", "enable_groupspawn", "enable_globalspawn",
+    		"behavior_join", "behavior_death", "behavior_globalspawn");
 
     public SpawnControl(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
         super(pluginLoader, instance, desc, folder, plugin, cLoader);
@@ -512,14 +518,12 @@ public class SpawnControl extends JavaPlugin {
     public Location getGroupSpawn(String group)
     {
     	// Check for spawn
-    	if(!this.activeGroupIds.contains(group))
+    	if(this.activeGroupIds.contains(group) || this.getGroupData(group))
     	{
-    		if(this.getGroupData(group))
-    		{
-    			// Found spawn!
-    			return this.groupSpawns.get(this.activeGroupIds.get(group));
-    		}
+    		return this.groupSpawns.get(this.activeGroupIds.get(group));
     	}
+    	
+    	SpawnControl.log.warning("[SpawnControl] Could not find or load group spawn for '"+group+"'!");
     	
     	return null;
     }
