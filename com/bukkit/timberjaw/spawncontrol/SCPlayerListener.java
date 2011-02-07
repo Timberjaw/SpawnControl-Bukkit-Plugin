@@ -6,6 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerEvent;
 import org.bukkit.event.player.PlayerListener;
+import org.bukkit.event.player.PlayerRespawnEvent;
 
 import com.nijikokun.bukkit.Permissions.Permissions;
 
@@ -253,7 +254,6 @@ public class SCPlayerListener extends PlayerListener {
     
     public void onPlayerJoin(PlayerEvent e)
     {
-    	SpawnControl.log.info("[SpawnControl] Player " + e.getPlayer().getName() + " joined with " + e.getPlayer().getHealth() + " health.");
     	if(Permissions.Security.getGroup(e.getPlayer().getName()).equalsIgnoreCase("default") && plugin.getHome(e.getPlayer().getName()) == null)
     	{
     		// Probably a new player
@@ -288,6 +288,44 @@ public class SCPlayerListener extends PlayerListener {
 	    			plugin.sendToSpawn(p);
 	    			break;
 	    	}
+    	}
+    }
+    
+    public void onPlayerRespawn(PlayerRespawnEvent e)
+    {
+    	int db = plugin.getSetting("behavior_death");
+    	if(db != SpawnControl.Settings.DEATH_NONE)
+    	{
+    		// Get player
+	    	Player p = e.getPlayer();
+	    	
+	    	// Check for home
+	    	SpawnControl.log.info("[SpawnControl] Attempting to respawn player "+p.getName()+" (respawning).");
+	    	
+	    	// Build respawn location
+	    	Location l;
+	    	
+    		switch(db)
+	    	{
+	    		case SpawnControl.Settings.DEATH_HOME:
+	    			l = plugin.getHome(p.getName());
+	    			break;
+	    		case SpawnControl.Settings.DEATH_GROUPSPAWN:
+	    			l = plugin.getGroupSpawn(Permissions.Security.getGroup(p.getName()));
+	    			break;
+	    		case SpawnControl.Settings.DEATH_GLOBALSPAWN:
+	    		default:
+	    			l = plugin.getGroupSpawn("scglobal");
+	    			break;
+	    	}
+    		
+    		if(l == null)
+    		{
+    			// Something has gone wrong
+    			SpawnControl.log.warning("[SpawnControl] Could not find respawn for " + p.getName() + "!");
+    		}
+    		
+    		e.setRespawnLocation(l);
     	}
     }
 }
