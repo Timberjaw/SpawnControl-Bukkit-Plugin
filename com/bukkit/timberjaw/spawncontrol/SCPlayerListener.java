@@ -249,7 +249,7 @@ public class SCPlayerListener extends PlayerListener {
     		return true;
     	}
     	
-    	return false;
+    	return true;
     }
     
     public void onPlayerJoin(PlayerEvent e)
