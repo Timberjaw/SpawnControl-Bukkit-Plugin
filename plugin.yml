@@ -1,11 +1,14 @@
 name: SpawnControl
 main: com.bukkit.timberjaw.spawncontrol.SpawnControl
-version: 0.4.3
+version: 0.5
 commands:
   setspawn:
     description: Sets the global spawn
     usage: /<command>
   spawn:
+    description: Respawns you at the global spawn
+    usage: /<command>
+  globalspawn:
     description: Respawns you at the global spawn
     usage: /<command>
   setgroupspawn:

@@ -1,29 +1,5 @@
 package com.bukkit.timberjaw.spawncontrol;
 
-/*
- * Features:
- * 1. Default spawn handling (exactspawn) - /setspawn, /spawn, /home, /globalspawn
- * 2. Group spawn handling - /setgroupspawn [group], /groupspawn <group>, /spawn, /home
- * 		- WAITING ON GROUP SUPPORT
- * 3. User spawn handling - /sethome <player>, /home <player>, /spawn <player>
- * 4. Resets - /resetgroupspawn [group], /resethome <player>
- * 
- * Tables:
- * 1. spawncontrol_config - active (?)
- * 2. groups - group (name/id), X, Y, Z, R, P, last_updated (timestamp), updated_by (player)
- * 		- Default entry (untracked users): sc_global, 0, 0, 0, 0, 0, 0, ''
- * 3. players - user (name/id), X, Y, Z, R, P, last_updated (timestamp), updated_by (player)
- * 
- * Configuration values:
- * 1. home_priority (default: user) (values: user, group, global)
- * 		- If set to group, user homes are effectively DISABLED for members of groups with group spawns
- * 
- * Behaviors:
- * 1. /spawn ALWAYS points to group or global spawn
- * 2. /home points to user home if available and allowed, otherwise identical to /spawn
- * 3. Resetting REMOVES the specified spawn/home
- */
-
 import java.io.*;
 import java.util.Hashtable;
 import java.util.logging.*;
@@ -31,10 +7,13 @@ import java.sql.*;
 
 // Import bukkit packages
 
+import net.minecraft.server.WorldServer;
+
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
@@ -54,7 +33,6 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
-    private final SCEntityListener entityListener = new SCEntityListener(this);
     private Connection conn;
     public static Logger log;
     public final static String directory = "plugins/SpawnControl";
@@ -85,6 +63,8 @@ public class SpawnControl extends JavaPlugin {
     	public static final int JOIN_HOME = 1;
     	public static final int JOIN_GROUPSPAWN = 2;
     	public static final int JOIN_GLOBALSPAWN = 3;
+    	public static final int GLOBALSPAWN_DEFAULT = 0;
+    	public static final int GLOBALSPAWN_OVERRIDE = 1;
     }
 
     public SpawnControl(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
@@ -170,6 +150,7 @@ public class SpawnControl extends JavaPlugin {
 		        this.setSetting("enable_globalspawn", Settings.YES, "initDB");
 		        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN, "initDB");
 		        this.setSetting("behavior_join", Settings.JOIN_NONE, "initDB");
+		        this.setSetting("behavior_globalspawn", Settings.GLOBALSPAWN_DEFAULT, "initDB");
 	        }
 	        
 	        // Check global spawn
@@ -179,8 +160,21 @@ public class SpawnControl extends JavaPlugin {
 	    		{
 	    			// No group spawn available, use global
 	    			log.info("[SpawnControl]: No global spawn found, setting global spawn to world spawn.");
-	    			this.setGroupSpawn("scglobal", this.getServer().getWorlds()[0].getSpawnLocation(), "initDB");
+	    			this.setGroupSpawn("scglobal", this.getServer().getWorlds().get(0).getSpawnLocation(), "initDB");
 	    		}
+	    		
+	    		int db = this.getSetting("behavior_globalspawn");
+	        	if(db != SpawnControl.Settings.GLOBALSPAWN_DEFAULT)
+	        	{
+		    		// Get global spawn location
+		    		Location lg = this.getGroupSpawn("scglobal");
+		    		
+		    		// Set regular spawn location
+		    		WorldServer ws = ((CraftWorld)this.getServer().getWorlds().get(0)).getHandle();
+	                ws.spawnX = lg.getBlockX();
+	                ws.spawnY = lg.getBlockY();
+	                ws.spawnZ = lg.getBlockZ();
+	        	}
 	    	}
         }
         catch(SQLException e)
@@ -244,8 +238,8 @@ public class SpawnControl extends JavaPlugin {
         // Get player join
         pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
         
-        // Get player damage (used to detect death condition)
-        pm.registerEvent(Event.Type.ENTITY_DAMAGED, entityListener, Priority.Highest, this);
+        // Get player respawn
+        pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
         
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -553,7 +547,7 @@ public class SpawnControl extends JavaPlugin {
              while (rs.next()) {
                  success = true;
                  this.activePlayerIds.put(name, id);
-                 Location l = new Location(null, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
+                 Location l = new Location(this.getServer().getWorlds().get(0), rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.homes.put(id, l);
              }
         	conn.close();
@@ -595,7 +589,7 @@ public class SpawnControl extends JavaPlugin {
              while (rs.next()) {
                  success = true;
                  this.activeGroupIds.put(name, id);
-                 Location l = new Location(null, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
+                 Location l = new Location(this.getServer().getWorlds().get(0), rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.groupSpawns.put(id, l);
              }
         	conn.close();
