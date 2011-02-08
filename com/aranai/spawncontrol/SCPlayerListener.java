@@ -1,4 +1,4 @@
-package com.bukkit.timberjaw.spawncontrol;
+package com.aranai.spawncontrol;
 
 import org.bukkit.Location;
 import org.bukkit.command.Command;
