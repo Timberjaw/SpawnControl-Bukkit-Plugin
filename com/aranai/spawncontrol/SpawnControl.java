@@ -388,7 +388,8 @@ public class SpawnControl extends JavaPlugin {
     public void sendHome(Player p)
     {
     	// Check for home
-    	if(!this.activePlayerIds.contains(p.getName()))
+    	String nameHash = p.getName() + "-" + p.getWorld().getName();
+    	if(!this.activePlayerIds.contains(nameHash))
     	{
     		if(!this.getPlayerData(p.getName(), p.getWorld()))
     		{
@@ -399,19 +400,20 @@ public class SpawnControl extends JavaPlugin {
     	}
     	
     	// Teleport to home
-    	p.teleportTo(this.homes.get(this.activePlayerIds.get(p.getName())));
+    	p.teleportTo(this.homes.get(this.activePlayerIds.get(nameHash)));
     }
     
     // Get home
     public Location getHome(String name, World world)
     {
     	// Check for home
-    	if(!this.activePlayerIds.contains(name))
+    	String nameHash = name + "-" + world.getName();
+    	if(!this.activePlayerIds.contains(nameHash))
     	{
     		if(this.getPlayerData(name, world))
     		{
     			// Found home!
-    			return this.homes.get(this.activePlayerIds.get(name));
+    			return this.homes.get(this.activePlayerIds.get(nameHash));
     		}
     	}
     	
@@ -472,7 +474,8 @@ public class SpawnControl extends JavaPlugin {
     public void sendToGroupSpawn(String group, Player p)
     {
     	// Check for spawn
-    	if(!this.activeGroupIds.contains(group))
+    	String groupHash = group + "-" + p.getWorld().getName();
+    	if(!this.activeGroupIds.contains(groupHash))
     	{
     		if(!this.getGroupData(group, p.getWorld()))
     		{
@@ -483,7 +486,7 @@ public class SpawnControl extends JavaPlugin {
     	}
     	
     	// Teleport to home
-    	p.teleportTo(this.groupSpawns.get(this.activeGroupIds.get(group)));
+    	p.teleportTo(this.groupSpawns.get(this.activeGroupIds.get(groupHash)));
     }
     
     // Set group spawn
@@ -581,7 +584,8 @@ public class SpawnControl extends JavaPlugin {
              
              while (rs.next()) {
                  success = true;
-                 this.activePlayerIds.put(name, id);
+                 String nameHash = name + "-" + world.getName();
+                 this.activePlayerIds.put(nameHash, id);
                  Location l = new Location(world, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.homes.put(id, l);
              }
@@ -624,7 +628,8 @@ public class SpawnControl extends JavaPlugin {
              
              while (rs.next()) {
                  success = true;
-                 this.activeGroupIds.put(name, id);
+                 String nameHash = name + "-" + world.getName();
+                 this.activeGroupIds.put(nameHash, id);
                  Location l = new Location(world, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.groupSpawns.put(id, l);
              }
