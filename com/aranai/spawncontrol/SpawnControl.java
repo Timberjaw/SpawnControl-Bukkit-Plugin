@@ -518,6 +518,10 @@ public class SpawnControl extends JavaPlugin {
     public Location getGroupSpawn(String group)
     {
     	// Check for spawn
+    	if(group.equals("Default"))
+    	{
+    		group = "scglobal";
+    	}
     	if(this.activeGroupIds.contains(group) || this.getGroupData(group))
     	{
     		return this.groupSpawns.get(this.activeGroupIds.get(group));
