@@ -36,10 +36,23 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
-    private Connection conn;
+    protected Connection conn;
     public static Logger log;
     public final static String directory = "plugins/SpawnControl";
     public final static String db = "jdbc:sqlite:" + SpawnControl.directory + File.separator + "spawncontrol.db";
+    
+    // Schema version
+    public static final int SchemaVersion = 1;
+    
+    // SQL Strings
+    protected static String SQLCreatePlayersTable = "CREATE TABLE `players` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
+		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
+		+"`updated` INTEGER, `updated_by` varchar(32));";
+    protected static String SQLCreatePlayersIndex = "CREATE UNIQUE INDEX playerIndex on `players` (`name`,`world`);";
+    protected static String SQLCreateGroupsTable = "CREATE TABLE `groups` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
+		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
+		+"`updated` INTEGER, `updated_by` varchar(32));";
+    protected static String SQLCreateGroupsIndex = "CREATE UNIQUE INDEX groupIndex on `groups` (`name`,`world`);";
     
     // Permissions
     public static Permissions Permissions = null;
@@ -101,10 +114,8 @@ public class SpawnControl extends JavaPlugin {
             	
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
-                st.execute("CREATE TABLE `players` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
-                		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
-                		+"`updated` INTEGER, `updated_by` varchar(32));");
-                st.execute("CREATE UNIQUE INDEX playerIndex on `players` (`name`,`world`);");
+                st.execute(SpawnControl.SQLCreatePlayersTable);
+                st.execute(SpawnControl.SQLCreatePlayersIndex);
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'players' created.");
@@ -119,10 +130,8 @@ public class SpawnControl extends JavaPlugin {
             	
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
-                st.execute("CREATE TABLE `groups` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
-                		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
-                		+"`updated` INTEGER, `updated_by` varchar(32));");
-                st.execute("CREATE UNIQUE INDEX groupIndex on `groups` (`name`,`world`);");
+                st.execute(SpawnControl.SQLCreateGroupsTable);
+                st.execute(SpawnControl.SQLCreateGroupsIndex);
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'groups' created.");
@@ -158,6 +167,7 @@ public class SpawnControl extends JavaPlugin {
 		        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN, "initDB");
 		        this.setSetting("behavior_join", Settings.JOIN_NONE, "initDB");
 		        this.setSetting("behavior_globalspawn", Settings.GLOBALSPAWN_DEFAULT, "initDB");
+		        this.setSetting("schema_version", SpawnControl.SchemaVersion, "initDB");
 	        }
 	        
 	        // Check global spawn
@@ -182,6 +192,13 @@ public class SpawnControl extends JavaPlugin {
 	                ws.spawnY = lg.getBlockY();
 	                ws.spawnZ = lg.getBlockZ();
 	        	}
+	    	}
+	    	
+	    	// Check schema version
+	    	int sv = this.getSetting("schema_version");
+	    	if(sv < SpawnControl.SchemaVersion)
+	    	{
+	    		SCUpdater.run(sv);
 	    	}
         }
         catch(SQLException e)
@@ -301,13 +318,15 @@ public class SpawnControl extends JavaPlugin {
             rs = ps.executeQuery();
              
             while (rs.next()) { value = rs.getInt("value"); this.lastSetting = name; this.lastSettingValue = value; }
-        	conn.close();
         }
         catch(Exception e)
         {
         	// Error
-        	SpawnControl.log.warning("[SpawnControl] DB Error: " + e.getMessage());
-        	e.printStackTrace();
+        	SpawnControl.log.warning("[SpawnControl] Could not get setting '"+name+"': " + e.getMessage());
+        }
+        finally
+        {
+        	if(conn != null) { try { conn.close(); } catch(Exception e) { e.printStackTrace(); } }
         }
         
         return value;
