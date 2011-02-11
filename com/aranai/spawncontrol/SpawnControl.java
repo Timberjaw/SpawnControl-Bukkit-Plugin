@@ -549,11 +549,11 @@ public class SpawnControl extends JavaPlugin {
     	}
     	
     	// Include group world in key
-    	group = group + "-" + world.getName();
+    	String groupHash = group + "-" + world.getName();
     	
-    	if(this.activeGroupIds.contains(group) || this.getGroupData(group, world))
+    	if(this.activeGroupIds.contains(groupHash) || this.getGroupData(group, world))
     	{
-    		return this.groupSpawns.get(this.activeGroupIds.get(group));
+    		return this.groupSpawns.get(this.activeGroupIds.get(groupHash));
     	}
     	
     	SpawnControl.log.warning("[SpawnControl] Could not find or load group spawn for '"+group+"'!");
