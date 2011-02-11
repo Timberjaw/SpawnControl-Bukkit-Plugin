@@ -170,6 +170,13 @@ public class SpawnControl extends JavaPlugin {
 		        this.setSetting("schema_version", SpawnControl.SchemaVersion, "initDB");
 	        }
 	        
+	        // Check schema version
+	    	int sv = this.getSetting("schema_version");
+	    	if(sv < SpawnControl.SchemaVersion)
+	    	{
+	    		SCUpdater.run(sv, this);
+	    	}
+	        
 	        // Check global spawn
 	    	if(!this.activeGroupIds.contains("scglobal"))
 	    	{
@@ -192,13 +199,6 @@ public class SpawnControl extends JavaPlugin {
 	                ws.spawnY = lg.getBlockY();
 	                ws.spawnZ = lg.getBlockZ();
 	        	}
-	    	}
-	    	
-	    	// Check schema version
-	    	int sv = this.getSetting("schema_version");
-	    	if(sv < SpawnControl.SchemaVersion)
-	    	{
-	    		SCUpdater.run(sv);
 	    	}
         }
         catch(SQLException e)

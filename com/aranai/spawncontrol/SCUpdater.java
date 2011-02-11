@@ -8,25 +8,22 @@ import java.sql.Statement;
 public class SCUpdater {
 	private static SpawnControl plugin;
 	
-	SCUpdater(SpawnControl plugin)
+	public static void run(int startVersion, SpawnControl plugin)
 	{
 		SCUpdater.plugin = plugin;
-	}
-	
-	public static void run(int startVersion)
-	{
+		
 		if(startVersion < 0) { startVersion = 0; }
 		int newVersion = SpawnControl.SchemaVersion;
 		
 		// Start updater
 		SpawnControl.log.info("[SpawnControl] Schema has changed. Updating from " + startVersion + " to " + newVersion);
 		
-		for(int i = startVersion; i <= newVersion; ++i)
+		for(int i = startVersion+1; i <= newVersion; ++i)
 		{
 			if(SCUpdater.update(i))
 			{
 				// Success
-				plugin.setSetting("schema_version", i, "SCUpdater");
+				SCUpdater.plugin.setSetting("schema_version", i, "SCUpdater");
 			}
 			else
 			{
@@ -63,9 +60,6 @@ public class SCUpdater {
 					conn.setAutoCommit(false);
 	                st = conn.createStatement();
 	                
-	                // Start transaction
-	                st.execute("BEGIN TRANSACTION;");
-	                
 	                // Drop playerIndex index
 	                st.execute("DROP INDEX playerIndex;");
 	                
@@ -81,6 +75,9 @@ public class SCUpdater {
 	                
 	                // Add player index
 	                st.execute(SpawnControl.SQLCreatePlayersIndex);
+	                
+	                // Import saved data
+	                st.execute("INSERT INTO players SELECT * FROM players_backup;");
 
 	                // Drop backup table
 	                st.execute("DROP TABLE players_backup;");
@@ -100,6 +97,9 @@ public class SCUpdater {
 	                
 	                // Add group index
 	                st.execute(SpawnControl.SQLCreateGroupsIndex);
+	                
+	                // Import saved data
+	                st.execute("INSERT INTO groups SELECT * FROM groups_backup;");
 	                
 	                // Drop backup table
 	                st.execute("DROP TABLE groups_backup;");
