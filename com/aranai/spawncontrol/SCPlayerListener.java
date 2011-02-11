@@ -254,7 +254,7 @@ public class SCPlayerListener extends PlayerListener {
     
     public void onPlayerJoin(PlayerEvent e)
     {
-    	if(Permissions.Security.getGroup(e.getPlayer().getName()).equalsIgnoreCase("default") && plugin.getHome(e.getPlayer().getName()) == null)
+    	if(Permissions.Security.getGroup(e.getPlayer().getName()).equalsIgnoreCase("default") && plugin.getHome(e.getPlayer().getName(), e.getPlayer().getWorld()) == null)
     	{
     		// Probably a new player
     		SpawnControl.log.info("[SpawnControl] Sending new player " + e.getPlayer().getName() + " to global spawn.");
@@ -263,7 +263,7 @@ public class SCPlayerListener extends PlayerListener {
     		plugin.sendToSpawn(e.getPlayer());
     		
     		// Set home for player
-    		plugin.setHome(e.getPlayer().getName(), plugin.getSpawn(), "SpawnControl");
+    		plugin.setHome(e.getPlayer().getName(), plugin.getSpawn(e.getPlayer().getWorld()), "SpawnControl");
     	}
     	
     	int jb = plugin.getSetting("behavior_join");
@@ -308,14 +308,14 @@ public class SCPlayerListener extends PlayerListener {
     		switch(db)
 	    	{
 	    		case SpawnControl.Settings.DEATH_HOME:
-	    			l = plugin.getHome(p.getName());
+	    			l = plugin.getHome(p.getName(), p.getWorld());
 	    			break;
 	    		case SpawnControl.Settings.DEATH_GROUPSPAWN:
-	    			l = plugin.getGroupSpawn(Permissions.Security.getGroup(p.getName()));
+	    			l = plugin.getGroupSpawn(Permissions.Security.getGroup(p.getName()), p.getWorld());
 	    			break;
 	    		case SpawnControl.Settings.DEATH_GLOBALSPAWN:
 	    		default:
-	    			l = plugin.getGroupSpawn("scglobal");
+	    			l = plugin.getGroupSpawn("scglobal", p.getWorld());
 	    			break;
 	    	}
     		

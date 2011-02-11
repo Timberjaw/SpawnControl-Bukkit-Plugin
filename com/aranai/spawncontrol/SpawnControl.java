@@ -13,6 +13,7 @@ import net.minecraft.server.WorldServer;
 
 import org.bukkit.Location;
 import org.bukkit.Server;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.craftbukkit.CraftWorld;
@@ -101,9 +102,9 @@ public class SpawnControl extends JavaPlugin {
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
                 st.execute("CREATE TABLE `players` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
-                		+"`x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
+                		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
                 		+"`updated` INTEGER, `updated_by` varchar(32));");
-                st.execute("CREATE UNIQUE INDEX playerIndex on `players` (`name`);");
+                st.execute("CREATE UNIQUE INDEX playerIndex on `players` (`name`,`world`);");
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'players' created.");
@@ -119,9 +120,9 @@ public class SpawnControl extends JavaPlugin {
             	conn.setAutoCommit(false);
                 st = conn.createStatement();
                 st.execute("CREATE TABLE `groups` (`id` INTEGER PRIMARY KEY, `name` varchar(32) NOT NULL, "
-                		+"`x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
+                		+"`world` varchar(50), `x` REAL, `y` REAL, `z` REAL, `r` REAL, `p` REAL, "
                 		+"`updated` INTEGER, `updated_by` varchar(32));");
-                st.execute("CREATE UNIQUE INDEX groupIndex on `groups` (`name`);");
+                st.execute("CREATE UNIQUE INDEX groupIndex on `groups` (`name`,`world`);");
                 conn.commit();
                 
                 log.info("[SpawnControl]: Table 'groups' created.");
@@ -162,10 +163,10 @@ public class SpawnControl extends JavaPlugin {
 	        // Check global spawn
 	    	if(!this.activeGroupIds.contains("scglobal"))
 	    	{
-	    		if(!this.getGroupData("scglobal"))
+	    		if(!this.getGroupData("scglobal", this.getServer().getWorlds().get(0)))
 	    		{
 	    			// No group spawn available, use global
-	    			log.info("[SpawnControl]: No global spawn found, setting global spawn to world spawn.");
+	    			log.info("[SpawnControl]: No global spawn found, setting global spawn to world(0) spawn.");
 	    			this.setGroupSpawn("scglobal", this.getServer().getWorlds().get(0).getSpawnLocation(), "initDB");
 	    		}
 	    		
@@ -173,7 +174,7 @@ public class SpawnControl extends JavaPlugin {
 	        	if(db != SpawnControl.Settings.GLOBALSPAWN_DEFAULT)
 	        	{
 		    		// Get global spawn location
-		    		Location lg = this.getGroupSpawn("scglobal");
+		    		Location lg = this.getGroupSpawn("scglobal", this.getServer().getWorlds().get(0));
 		    		
 		    		// Set regular spawn location
 		    		WorldServer ws = ((CraftWorld)this.getServer().getWorlds().get(0)).getHandle();
@@ -359,9 +360,9 @@ public class SpawnControl extends JavaPlugin {
     }
     
     // Get spawn
-    public Location getSpawn()
+    public Location getSpawn(World world)
     {
-    	return this.getGroupSpawn("scglobal");
+    	return this.getGroupSpawn("scglobal", world);
     }
     
     // Home
@@ -370,7 +371,7 @@ public class SpawnControl extends JavaPlugin {
     	// Check for home
     	if(!this.activePlayerIds.contains(p.getName()))
     	{
-    		if(!this.getPlayerData(p.getName()))
+    		if(!this.getPlayerData(p.getName(), p.getWorld()))
     		{
     			// No home available, use global
     			this.sendToSpawn(p);
@@ -383,12 +384,12 @@ public class SpawnControl extends JavaPlugin {
     }
     
     // Get home
-    public Location getHome(String name)
+    public Location getHome(String name, World world)
     {
     	// Check for home
     	if(!this.activePlayerIds.contains(name))
     	{
-    		if(this.getPlayerData(name))
+    		if(this.getPlayerData(name, world))
     		{
     			// Found home!
     			return this.homes.get(this.activePlayerIds.get(name));
@@ -411,15 +412,16 @@ public class SpawnControl extends JavaPlugin {
 			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(db);
 			conn.setAutoCommit(false);
-			ps = conn.prepareStatement("REPLACE INTO `players` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
+			ps = conn.prepareStatement("REPLACE INTO `players` (id, name, world, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 			ps.setString(1, name);
-			ps.setDouble(2, l.getX());
-			ps.setDouble(3, l.getY());
-			ps.setDouble(4, l.getZ());
-			ps.setFloat(5, l.getYaw());
-			ps.setFloat(6, l.getPitch());
-			ps.setInt(7, this.getTimeStamp());
-			ps.setString(8, updatedBy);
+			ps.setString(2, l.getWorld().getName());
+			ps.setDouble(3, l.getX());
+			ps.setDouble(4, l.getY());
+			ps.setDouble(5, l.getZ());
+			ps.setFloat(6, l.getYaw());
+			ps.setFloat(7, l.getPitch());
+			ps.setInt(8, this.getTimeStamp());
+			ps.setString(9, updatedBy);
 			ps.execute();
 			conn.commit();
         	conn.close();
@@ -441,7 +443,7 @@ public class SpawnControl extends JavaPlugin {
         if(success)
         {
         	// Update local cache
-        	this.getPlayerData(name);
+        	this.getPlayerData(name, l.getWorld());
         }
         
         return success;
@@ -453,7 +455,7 @@ public class SpawnControl extends JavaPlugin {
     	// Check for spawn
     	if(!this.activeGroupIds.contains(group))
     	{
-    		if(!this.getGroupData(group))
+    		if(!this.getGroupData(group, p.getWorld()))
     		{
     			// No group spawn available, use global
     			this.sendToSpawn(p);
@@ -478,15 +480,16 @@ public class SpawnControl extends JavaPlugin {
 			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(db);
 			conn.setAutoCommit(false);
-			ps = conn.prepareStatement("REPLACE INTO `groups` (id, name, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?);");
+			ps = conn.prepareStatement("REPLACE INTO `groups` (id, name, world, x, y, z, r, p, updated, updated_by) VALUES (null, ?, ?, ?, ?, ?, ?, ?, ?, ?);");
 			ps.setString(1, group);
-			ps.setDouble(2, l.getX());
-			ps.setDouble(3, l.getY());
-			ps.setDouble(4, l.getZ());
-			ps.setFloat(5, l.getYaw());
-			ps.setFloat(6, l.getPitch());
-			ps.setInt(7, this.getTimeStamp());
-			ps.setString(8, updatedBy);
+			ps.setString(2, l.getWorld().getName());
+			ps.setDouble(3, l.getX());
+			ps.setDouble(4, l.getY());
+			ps.setDouble(5, l.getZ());
+			ps.setFloat(6, l.getYaw());
+			ps.setFloat(7, l.getPitch());
+			ps.setInt(8, this.getTimeStamp());
+			ps.setString(9, updatedBy);
 			ps.execute();
 			conn.commit();
         	conn.close();
@@ -508,21 +511,25 @@ public class SpawnControl extends JavaPlugin {
         if(success)
         {
         	// Update local cache
-        	this.getGroupData(group);
+        	this.getGroupData(group, l.getWorld());
         }
         
         return success;
     }
     
     // Get group spawn
-    public Location getGroupSpawn(String group)
+    public Location getGroupSpawn(String group, World world)
     {
     	// Check for spawn
     	if(group.equals("Default"))
     	{
     		group = "scglobal";
     	}
-    	if(this.activeGroupIds.contains(group) || this.getGroupData(group))
+    	
+    	// Include group world in key
+    	group = group + "-" + world.getName();
+    	
+    	if(this.activeGroupIds.contains(group) || this.getGroupData(group, world))
     	{
     		return this.groupSpawns.get(this.activeGroupIds.get(group));
     	}
@@ -533,7 +540,7 @@ public class SpawnControl extends JavaPlugin {
     }
     
     // Utility
-    private boolean getPlayerData(String name)
+    private boolean getPlayerData(String name, World world)
     {
     	Connection conn = null;
     	PreparedStatement ps = null;
@@ -547,15 +554,16 @@ public class SpawnControl extends JavaPlugin {
     		Class.forName("org.sqlite.JDBC");
         	conn = DriverManager.getConnection(db);
         	//conn.setAutoCommit(false);
-        	ps = conn.prepareStatement("SELECT * FROM `players` WHERE `name` = ?");
+        	ps = conn.prepareStatement("SELECT * FROM `players` WHERE `name` = ? AND `world` = ?");
             ps.setString(1, name);
+            ps.setString(2, world.getName());
             rs = ps.executeQuery();
             //conn.commit();
              
              while (rs.next()) {
                  success = true;
                  this.activePlayerIds.put(name, id);
-                 Location l = new Location(this.getServer().getWorlds().get(0), rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
+                 Location l = new Location(world, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.homes.put(id, l);
              }
         	conn.close();
@@ -575,7 +583,7 @@ public class SpawnControl extends JavaPlugin {
         return success;
     }
     
-    private boolean getGroupData(String name)
+    private boolean getGroupData(String name, World world)
     {
     	Connection conn = null;
     	PreparedStatement ps = null;
@@ -589,15 +597,16 @@ public class SpawnControl extends JavaPlugin {
     		Class.forName("org.sqlite.JDBC");
         	conn = DriverManager.getConnection(db);
         	//conn.setAutoCommit(false);
-        	ps = conn.prepareStatement("SELECT * FROM `groups` WHERE `name` = ?");
+        	ps = conn.prepareStatement("SELECT * FROM `groups` WHERE `name` = ? AND `world` = ?");
             ps.setString(1, name);
+            ps.setString(2, world.getName());
             rs = ps.executeQuery();
             //conn.commit();
              
              while (rs.next()) {
                  success = true;
                  this.activeGroupIds.put(name, id);
-                 Location l = new Location(this.getServer().getWorlds().get(0), rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
+                 Location l = new Location(world, rs.getDouble("x"), rs.getDouble("y"), rs.getDouble("z"), rs.getFloat("r"), rs.getFloat("p"));
                  this.groupSpawns.put(id, l);
              }
         	conn.close();
