@@ -479,9 +479,17 @@ public class SpawnControl extends JavaPlugin {
     	{
     		if(!this.getGroupData(group, p.getWorld()))
     		{
-    			// No group spawn available, use global
-    			this.sendToSpawn(p);
-    			return;
+    			if(group.equals("scglobal"))
+    			{
+    				// No global spawn found, set one
+    				this.setGroupSpawn("scglobal", p.getWorld().getSpawnLocation(), "sendToGroupSpawn");
+    			}
+    			else
+    			{
+	    			// No group spawn available, use global
+	    			this.sendToSpawn(p);
+	    			return;
+    			}
     		}
     	}
     	
