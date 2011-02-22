@@ -12,7 +12,6 @@ import java.sql.*;
 import net.minecraft.server.WorldServer;
 
 import org.bukkit.Location;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -22,7 +21,6 @@ import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLoader;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
@@ -87,9 +85,11 @@ public class SpawnControl extends JavaPlugin {
     		"enable_home", "enable_groupspawn", "enable_globalspawn",
     		"behavior_join", "behavior_death", "behavior_globalspawn");
 
-    public SpawnControl(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ClassLoader cLoader) {
-        super(pluginLoader, instance, desc, folder, plugin, cLoader);
-        // TODO: Place any custom initialisation code here
+    public SpawnControl()
+    {
+    	super();
+    	
+    	// TODO: Place any custom initialisation code here
     }
     
     // Initialize database
