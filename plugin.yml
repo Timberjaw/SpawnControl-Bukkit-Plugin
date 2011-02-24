@@ -1,6 +1,6 @@
 name: SpawnControl
 main: com.aranai.spawncontrol.SpawnControl
-version: 0.6.2
+version: 0.6.3
 author: Timberjaw
 commands:
   setspawn:

@@ -194,10 +194,12 @@ public class SpawnControl extends JavaPlugin {
 		    		Location lg = this.getGroupSpawn("scglobal", this.getServer().getWorlds().get(0));
 		    		
 		    		// Set regular spawn location
+		    		/*
 		    		WorldServer ws = ((CraftWorld)this.getServer().getWorlds().get(0)).getHandle();
 	                ws.spawnX = lg.getBlockX();
 	                ws.spawnY = lg.getBlockY();
 	                ws.spawnZ = lg.getBlockZ();
+	                */
 	        	}
 	    	}
         }
