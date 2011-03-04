@@ -7,15 +7,10 @@ import java.util.List;
 import java.util.logging.*;
 import java.sql.*;
 
-// Import bukkit packages
-
-import net.minecraft.server.WorldServer;
-
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
-import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
@@ -62,6 +57,7 @@ public class SpawnControl extends JavaPlugin {
     private Hashtable<String,Integer> activeGroupIds;
     private Hashtable<Integer,Location> groupSpawns;
     private Hashtable<String,Boolean> respawning;
+    private Hashtable<String,Long> cooldowns;
     private String lastSetting;
     private int lastSettingValue;
     
@@ -83,13 +79,14 @@ public class SpawnControl extends JavaPlugin {
     
     public static final List<String> validSettings = Arrays.asList(
     		"enable_home", "enable_groupspawn", "enable_globalspawn",
-    		"behavior_join", "behavior_death", "behavior_globalspawn");
+    		"behavior_join", "behavior_death", "behavior_globalspawn",
+    		"cooldown_home", "cooldown_sethome", "cooldown_spawn",
+    		"cooldown_groupspawn" 
+    );
 
     public SpawnControl()
     {
     	super();
-    	
-    	// TODO: Place any custom initialisation code here
     }
     
     // Initialize database
@@ -168,6 +165,10 @@ public class SpawnControl extends JavaPlugin {
 		        this.setSetting("behavior_join", Settings.JOIN_NONE, "initDB");
 		        this.setSetting("behavior_globalspawn", Settings.GLOBALSPAWN_DEFAULT, "initDB");
 		        this.setSetting("schema_version", SpawnControl.SchemaVersion, "initDB");
+		        this.setSetting("cooldown_home", 0, "initDB");
+		        this.setSetting("cooldown_sethome", 0, "initDB");
+		        this.setSetting("cooldown_groupspawn", 0, "initDB");
+		        this.setSetting("cooldown_spawn", 0, "initDB");
 	        }
 	        
 	        // Check schema version
@@ -190,11 +191,12 @@ public class SpawnControl extends JavaPlugin {
 	    		int db = this.getSetting("behavior_globalspawn");
 	        	if(db != SpawnControl.Settings.GLOBALSPAWN_DEFAULT)
 	        	{
+	        		/*
+	        		 * Removed until I find out what happened to spawnX|Y|Z
 		    		// Get global spawn location
 		    		Location lg = this.getGroupSpawn("scglobal", this.getServer().getWorlds().get(0));
 		    		
 		    		// Set regular spawn location
-		    		/*
 		    		WorldServer ws = ((CraftWorld)this.getServer().getWorlds().get(0)).getHandle();
 	                ws.spawnX = lg.getBlockX();
 	                ws.spawnY = lg.getBlockY();
@@ -227,8 +229,11 @@ public class SpawnControl extends JavaPlugin {
         this.activeGroupIds = new Hashtable<String,Integer>();
         this.groupSpawns = new Hashtable<Integer,Location>();
         
-        // Intialize respawn list
+        // Initialize respawn list
         this.respawning = new Hashtable<String,Boolean>();
+        
+        // Initialize cooldown list
+        this.cooldowns = new Hashtable<String,Long>();
         
         // Initialize last setting info
         this.lastSetting = "";
@@ -254,7 +259,7 @@ public class SpawnControl extends JavaPlugin {
     	    	SpawnControl.Permissions = (Permissions)test;
     	    	this.usePermissions = true;
     	    } else {
-    	    	log.info("[SpawnControl] Warning: Permissions system not enabled.");
+    	    	log.warning("[SpawnControl] Permissions system not enabled, using isOP instead.");
     	    }
     	}
         
@@ -660,6 +665,42 @@ public class SpawnControl extends JavaPlugin {
         return success;
     }
     
+    public void setCooldown(Player p, String cooldown)
+    {
+    	String key = p.getName()+"."+cooldown;
+    	long cooldownAmount = this.getSetting("cooldown_"+cooldown);
+    	
+    	if(cooldownAmount > 0)
+    	{
+    		cooldowns.put(key, p.getWorld().getFullTime());
+    	}
+    }
+    
+    public long getCooldownRemaining(Player p, String cooldown)
+    {
+    	String key = p.getName()+"."+cooldown;
+    	long cooldownAmount = this.getSetting("cooldown_"+cooldown);
+    	
+    	if(cooldowns.containsKey(key))
+    	{
+    		// Compare time
+    		long timeElapsed = (p.getWorld().getFullTime() - cooldowns.get(key))/20;
+    		
+    		if(timeElapsed > cooldownAmount)
+    		{
+    			// Remove cooldown
+    			cooldowns.remove(key);
+    		}
+    		else
+    		{
+    			// Return number of seconds left
+    			return cooldownAmount-timeElapsed;
+    		}
+    	}
+    	
+    	return 0;
+    }
+    
     public void importConfig()
     {
     	File cf = new File(directory+"/spawncontrol-players.properties");
@@ -744,7 +785,7 @@ public class SpawnControl extends JavaPlugin {
                 		String[] parts = text.split("=");
                 		String name = parts[0];
                 		String[] coords = parts[1].split(":");
-                		Location l = new Location(null,
+                		Location l = new Location(this.getServer().getWorlds().get(0),
                 				Double.parseDouble(coords[0]),
                 				Double.parseDouble(coords[1]),
                 				Double.parseDouble(coords[2]),
