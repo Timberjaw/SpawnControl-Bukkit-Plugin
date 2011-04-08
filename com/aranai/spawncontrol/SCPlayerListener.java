@@ -412,9 +412,10 @@ public class SCPlayerListener extends PlayerListener {
     		else
     		{
     			// Set world
-    			l.setWorld(plugin.getServer().getWorlds().get(0));
+    			l.setWorld(p.getWorld());
     		}
     		
+    		SpawnControl.log.info("[SpawnControl] DEBUG: Respawn Location: " + l.toString());
     		e.setRespawnLocation(l);
     	}
     }
