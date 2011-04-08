@@ -4,7 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
@@ -133,8 +133,34 @@ public class SCPlayerListener extends PlayerListener {
     		}
     		else
     		{
-	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to spawn.");
-	        	plugin.sendToSpawn(p);
+    			int spawnBehavior = plugin.getSetting("behavior_spawn");
+    			String spawnType = "global";
+    			
+    			// Check permissions availability for group spawn
+    			if(spawnBehavior == SpawnControl.Settings.SPAWN_GROUP && !plugin.usePermissions)
+    			{
+    				SpawnControl.log.warning("[SpawnControl] Spawn behavior set to 'group' but group support is not available. Using global spawn.");
+    				spawnBehavior = SpawnControl.Settings.SPAWN_GLOBAL;
+    			}
+    			
+    			switch(spawnBehavior)
+    			{
+	    			case SpawnControl.Settings.SPAWN_HOME:
+						// Send player to home
+						plugin.sendHome(p);
+					break;
+    				case SpawnControl.Settings.SPAWN_GROUP:
+    					// Send player to group spawn
+    					plugin.sendToGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p);
+    				break;
+    				case SpawnControl.Settings.SPAWN_GLOBAL:
+    				default:
+    					// Send player to global spawn
+    					plugin.sendToSpawn(p);
+    				break;
+    			}
+    			
+	    		SpawnControl.log.info("[SpawnControl] Sending player "+p.getName()+" to spawn ("+spawnType+").");
     		}
         	return true;
     	}
@@ -296,7 +322,7 @@ public class SCPlayerListener extends PlayerListener {
     	return true;
     }
     
-    public void onPlayerJoin(PlayerEvent e)
+    public void onPlayerJoin(PlayerJoinEvent e)
     {
     	if(plugin.getHome(e.getPlayer().getName(), e.getPlayer().getWorld()) == null)
     	{

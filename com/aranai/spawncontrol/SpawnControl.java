@@ -29,6 +29,7 @@ import com.nijikokun.bukkit.Permissions.Permissions;
  */
 public class SpawnControl extends JavaPlugin {
     private final SCPlayerListener playerListener = new SCPlayerListener(this);
+    private final SCWorldListener worldListener = new SCWorldListener(this);
     protected Connection conn;
     public static Logger log;
     public final static String directory = "plugins/SpawnControl";
@@ -63,6 +64,7 @@ public class SpawnControl extends JavaPlugin {
     
     // Settings
     public static final class Settings {
+    	public static final int UNSET = -1;
     	public static final int NO = 0;
     	public static final int YES = 1;
     	public static final int DEATH_NONE = 0;
@@ -75,13 +77,15 @@ public class SpawnControl extends JavaPlugin {
     	public static final int JOIN_GLOBALSPAWN = 3;
     	public static final int GLOBALSPAWN_DEFAULT = 0;
     	public static final int GLOBALSPAWN_OVERRIDE = 1;
+    	public static final int SPAWN_GLOBAL = 0;
+    	public static final int SPAWN_GROUP = 1;
+    	public static final int SPAWN_HOME = 2;
     }
     
     public static final List<String> validSettings = Arrays.asList(
     		"enable_home", "enable_groupspawn", "enable_globalspawn",
-    		"behavior_join", "behavior_death", "behavior_globalspawn",
-    		"cooldown_home", "cooldown_sethome", "cooldown_spawn",
-    		"cooldown_groupspawn" 
+    		"behavior_join", "behavior_death", "behavior_globalspawn", "behavior_spawn",
+    		"cooldown_home", "cooldown_sethome", "cooldown_spawn", "cooldown_groupspawn" 
     );
 
     public SpawnControl()
@@ -164,6 +168,7 @@ public class SpawnControl extends JavaPlugin {
 		        this.setSetting("behavior_death", Settings.DEATH_GLOBALSPAWN, "initDB");
 		        this.setSetting("behavior_join", Settings.JOIN_NONE, "initDB");
 		        this.setSetting("behavior_globalspawn", Settings.GLOBALSPAWN_DEFAULT, "initDB");
+		        this.setSetting("behavior_spawn", Settings.SPAWN_GLOBAL, "initDB");
 		        this.setSetting("schema_version", SpawnControl.SchemaVersion, "initDB");
 		        this.setSetting("cooldown_home", 0, "initDB");
 		        this.setSetting("cooldown_sethome", 0, "initDB");
@@ -176,33 +181,6 @@ public class SpawnControl extends JavaPlugin {
 	    	if(sv < SpawnControl.SchemaVersion)
 	    	{
 	    		SCUpdater.run(sv, this);
-	    	}
-	        
-	        // Check global spawn
-	    	if(!this.activeGroupIds.contains("scglobal"))
-	    	{
-	    		if(!this.getGroupData("scglobal", this.getServer().getWorlds().get(0)))
-	    		{
-	    			// No group spawn available, use global
-	    			log.info("[SpawnControl]: No global spawn found, setting global spawn to world(0) spawn.");
-	    			this.setGroupSpawn("scglobal", this.getServer().getWorlds().get(0).getSpawnLocation(), "initDB");
-	    		}
-	    		
-	    		int db = this.getSetting("behavior_globalspawn");
-	        	if(db != SpawnControl.Settings.GLOBALSPAWN_DEFAULT)
-	        	{
-	        		/*
-	        		 * Removed until I find out what happened to spawnX|Y|Z
-		    		// Get global spawn location
-		    		Location lg = this.getGroupSpawn("scglobal", this.getServer().getWorlds().get(0));
-		    		
-		    		// Set regular spawn location
-		    		WorldServer ws = ((CraftWorld)this.getServer().getWorlds().get(0)).getHandle();
-	                ws.spawnX = lg.getBlockX();
-	                ws.spawnY = lg.getBlockY();
-	                ws.spawnZ = lg.getBlockZ();
-	                */
-	        	}
 	    	}
         }
         catch(SQLException e)
@@ -271,6 +249,9 @@ public class SpawnControl extends JavaPlugin {
         
         // Get player respawn
         pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Highest, this);
+        
+        // Get world load
+        pm.registerEvent(Event.Type.WORLD_LOAD, worldListener, Priority.Monitor, this);
         
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
@@ -407,7 +388,7 @@ public class SpawnControl extends JavaPlugin {
     	}
     	
     	// Teleport to home
-    	p.teleportTo(this.homes.get(this.activePlayerIds.get(nameHash)));
+    	p.teleport(this.homes.get(this.activePlayerIds.get(nameHash)));
     }
     
     // Get home
@@ -501,7 +482,7 @@ public class SpawnControl extends JavaPlugin {
     	}
     	
     	// Teleport to home
-    	p.teleportTo(this.groupSpawns.get(this.activeGroupIds.get(groupHash)));
+    	p.teleport(this.groupSpawns.get(this.activeGroupIds.get(groupHash)));
     }
     
     // Set group spawn
@@ -621,7 +602,7 @@ public class SpawnControl extends JavaPlugin {
         return success;
     }
     
-    private boolean getGroupData(String name, World world)
+    public boolean getGroupData(String name, World world)
     {
     	Connection conn = null;
     	PreparedStatement ps = null;
@@ -634,12 +615,10 @@ public class SpawnControl extends JavaPlugin {
         {
     		Class.forName("org.sqlite.JDBC");
         	conn = DriverManager.getConnection(db);
-        	//conn.setAutoCommit(false);
         	ps = conn.prepareStatement("SELECT * FROM `groups` WHERE `name` = ? AND `world` = ?");
             ps.setString(1, name);
             ps.setString(2, world.getName());
             rs = ps.executeQuery();
-            //conn.commit();
              
              while (rs.next()) {
                  success = true;
