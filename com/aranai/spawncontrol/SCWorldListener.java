@@ -2,8 +2,8 @@ package com.aranai.spawncontrol;
 
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.event.world.WorldEvent;
 import org.bukkit.event.world.WorldListener;
+import org.bukkit.event.world.WorldLoadEvent;
 
 /**
  * Handle events for all World related events
@@ -17,7 +17,7 @@ public class SCWorldListener extends WorldListener {
         plugin = instance;
     }
     
-    public void onWorldLoad(WorldEvent event)
+    public void onWorldLoad(WorldLoadEvent event)
     {
     	World w = event.getWorld();
     	String name = w.getName();
