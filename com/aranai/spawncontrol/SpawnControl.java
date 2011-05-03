@@ -651,7 +651,7 @@ public class SpawnControl extends JavaPlugin {
     	
     	if(cooldownAmount > 0)
     	{
-    		cooldowns.put(key, p.getWorld().getFullTime());
+    		cooldowns.put(key, System.currentTimeMillis());
     	}
     }
     
@@ -663,7 +663,7 @@ public class SpawnControl extends JavaPlugin {
     	if(cooldowns.containsKey(key))
     	{
     		// Compare time
-    		long timeElapsed = (p.getWorld().getFullTime() - cooldowns.get(key))/20;
+    		long timeElapsed = (System.currentTimeMillis() - cooldowns.get(key))/1000;
     		
     		if(timeElapsed > cooldownAmount)
     		{
