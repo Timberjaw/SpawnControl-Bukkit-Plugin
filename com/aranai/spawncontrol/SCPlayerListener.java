@@ -1,6 +1,7 @@
 package com.aranai.spawncontrol;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -39,6 +40,14 @@ public class SCPlayerListener extends PlayerListener {
     		String homeowner = setter;
     		Location l = p.getLocation();
     		
+    		// Check basic permission first, as nothing else matters if they don't have this
+    		if(!this.canUseSetHomeBasic(p))
+    		{
+    			// User is trying to set home but they don't have permission
+    			p.sendMessage("You don't have permission to do that.");
+    			return true;
+    		}
+    		
     		// Check cooldown exemption and status
     		long cooldown = this.cooldownLeft(p, "sethome");
     		if(cooldown > 0)
@@ -47,35 +56,55 @@ public class SCPlayerListener extends PlayerListener {
     			return true;
     		}
     		
-    		// Set cooldown
-    		this.setCooldown(p, "sethome");
-    		
-    		if(cmd.length > 0 && !this.canUseSetHomeProxy(p))
+    		// Handle player name
+    		if(cmd.length > 0)
     		{
-    			// User is trying to set home for another user but they don't have permission
-    			p.sendMessage("You don't have permission to do that.");
+    			if(this.canUseSetHomeProxy(p))
+    			{
+	    			// Setting home for different player
+					homeowner = cmd[0];
+    			}
+    			else
+    			{
+	    			// User is trying to set home for another user but they don't have permission
+	    			p.sendMessage("You don't have permission to do that.");
+	    			return true;
+    			}
     		}
-    		else if(!this.canUseSetHomeBasic(p))
+    		
+    		// Handle world name
+    		if(cmd.length > 1)
     		{
-    			// User is trying to set home but they don't have permission
-    			p.sendMessage("You don't have permission to do that.");
+    			if(this.canUseSetHomeWorldProxy(p))
+    			{
+    				// Setting home for specific world
+    				World w = this.plugin.getServer().getWorld(cmd[1]);
+    				
+    				if(w != null)
+    				{
+    					// Set the world to be saved as part of the home location
+    					l.setWorld(w);
+    				}
+    				else
+    				{
+    					// The world does not exist
+    					p.sendMessage("The specified world does not exist.");
+    					return true;
+    				}
+    			}
+    		}
+    		
+    		// Attempt to set the home
+    		if(plugin.setHome(homeowner, l, setter))
+    		{
+    			p.sendMessage("Home set successfully!");
+    			
+    			// Set cooldown
+        		this.setCooldown(p, "sethome");
     		}
     		else
     		{
-    			if(cmd.length > 0)
-    			{
-    				// Setting home for different player
-    				homeowner = cmd[0];
-    			}
-    			
-	    		if(plugin.setHome(homeowner, l, setter))
-	    		{
-	    			p.sendMessage("Home set successfully!");
-	    		}
-	    		else
-	    		{
-	    			p.sendMessage("Could not set Home!");
-	    		}
+    			p.sendMessage("Could not set Home!");
     		}
     		
     		return true;
@@ -254,10 +283,10 @@ public class SCPlayerListener extends PlayerListener {
     	// Set setting
     	if(commandName.equals("sc_config") && this.canUseScConfig(p))
     	{
-    		if(cmd.length < 2)
+    		if(cmd.length < 1)
     		{
     			// Command format is wrong
-    			p.sendMessage("Command format: /sc_config [setting] [value]");
+    			p.sendMessage("Command format: /sc_config [setting] <value>");
     		}
     		else
     		{
@@ -269,32 +298,40 @@ public class SCPlayerListener extends PlayerListener {
 	    		}
 	    		else
 	    		{
-	    			// Parse value
-	    			try
+	    			if(cmd.length == 2)
 	    			{
-	    				int tmpval = Integer.parseInt(cmd[1]);
-	    				
-	    				if(tmpval < 0)
-	    				{
-	    					p.sendMessage("Value must be >= 0.");
-	    				}
-	    				else
-	    				{
-	    					// Save
-	    					if(!plugin.setSetting(cmd[0], tmpval, p.getName()))
-	    					{
-	    						p.sendMessage("Could not save value for '"+cmd[0]+"'!");
-	    					}
-	    					else
-	    					{
-	    						p.sendMessage("Saved value for '"+cmd[0]+"'.");
-	    					}
-	    				}
+		    			// Parse and save value
+		    			try
+		    			{
+		    				int tmpval = Integer.parseInt(cmd[1]);
+		    				
+		    				if(tmpval < 0)
+		    				{
+		    					p.sendMessage("Value must be >= 0.");
+		    				}
+		    				else
+		    				{
+		    					// Save
+		    					if(!plugin.setSetting(cmd[0], tmpval, p.getName()))
+		    					{
+		    						p.sendMessage("Could not save value for '"+cmd[0]+"'!");
+		    					}
+		    					else
+		    					{
+		    						p.sendMessage("Saved value for '"+cmd[0]+"'.");
+		    					}
+		    				}
+		    			}
+		    			catch(Exception ex)
+		    			{
+		    				// Bad number
+		    				p.sendMessage("Couldn't read value.");
+		    			}
 	    			}
-	    			catch(Exception ex)
+	    			else
 	    			{
-	    				// Bad number
-	    				p.sendMessage("Couldn't read value.");
+	    				// Display current value
+	    				p.sendMessage("Current value for '"+cmd[1]+"': "+plugin.getSetting(cmd[1]));
 	    			}
 	    		}
     		}
@@ -517,6 +554,16 @@ public class SCPlayerListener extends PlayerListener {
     	if(plugin.usePermissions)
     	{
     		SpawnControl.permissionHandler.has(p, "SpawnControl.sethome.proxy");
+    	}
+    	
+    	return p.isOp();
+    }
+    
+    public boolean canUseSetHomeWorldProxy(Player p)
+    {
+    	if(plugin.usePermissions)
+    	{
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.sethome.worldproxy");
     	}
     	
     	return p.isOp();
