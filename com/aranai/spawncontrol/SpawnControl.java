@@ -20,6 +20,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
 
 // Import permissions package
+import com.nijiko.permissions.PermissionHandler;
 import com.nijikokun.bukkit.Permissions.Permissions;
 
 /**
@@ -50,6 +51,7 @@ public class SpawnControl extends JavaPlugin {
     
     // Permissions
     public static Permissions Permissions = null;
+    public static PermissionHandler permissionHandler;
     public boolean usePermissions = false;
     
     // Cache variables
@@ -235,6 +237,7 @@ public class SpawnControl extends JavaPlugin {
     	if(SpawnControl.Permissions == null) {
     	    if(test != null) {
     	    	SpawnControl.Permissions = (Permissions)test;
+    	    	SpawnControl.permissionHandler = SpawnControl.Permissions.getHandler();
     	    	this.usePermissions = true;
     	    } else {
     	    	log.warning("[SpawnControl] Permissions system not enabled, using isOP instead.");

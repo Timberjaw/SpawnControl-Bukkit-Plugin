@@ -29,7 +29,7 @@ public class SCWorldListener extends WorldListener {
     	if(!plugin.getGroupData("scglobal", w))
 		{
 			// No spawn set, use world spawn location
-			SpawnControl.log.info("[SpawnControl]: No global spawn found, setting global spawn to world spawn.");
+			SpawnControl.log.info("[SpawnControl]: No global spawn found for world '"+name+"', setting global spawn to world spawn.");
 			plugin.setGroupSpawn("scglobal", w.getSpawnLocation(), "onWorldLoaded");
 		}
     	

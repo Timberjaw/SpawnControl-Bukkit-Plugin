@@ -8,8 +8,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-import com.nijikokun.bukkit.Permissions.Permissions;
-
 /**
  * Handle events for all Player related events
  * @author Timberjaw
@@ -151,7 +149,7 @@ public class SCPlayerListener extends PlayerListener {
 					break;
     				case SpawnControl.Settings.SPAWN_GROUP:
     					// Send player to group spawn
-    					plugin.sendToGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p);
+    					plugin.sendToGroupSpawn(SpawnControl.permissionHandler.getPrimaryGroup(p.getWorld().getName(), p.getName()), p);
     				break;
     				case SpawnControl.Settings.SPAWN_GLOBAL:
     				default:
@@ -244,7 +242,7 @@ public class SCPlayerListener extends PlayerListener {
     		else
     		{
     			// Get group spawn for player
-    			String group = Permissions.Security.getGroup(p.getWorld().getName(), p.getName());
+    			String group = SpawnControl.permissionHandler.getPrimaryGroup(p.getWorld().getName(), p.getName());
 	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to group spawn.");
 	        	plugin.sendToGroupSpawn(group, p);
     		}
@@ -353,7 +351,7 @@ public class SCPlayerListener extends PlayerListener {
 	    		case SpawnControl.Settings.JOIN_GROUPSPAWN:
 	    			if(plugin.usePermissions)
 	    			{
-	    				plugin.sendToGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p);
+	    				plugin.sendToGroupSpawn(SpawnControl.permissionHandler.getPrimaryGroup(p.getWorld().getName(), p.getName()), p);
 	    			}
 	    			else
 	    			{
@@ -390,7 +388,7 @@ public class SCPlayerListener extends PlayerListener {
 	    		case SpawnControl.Settings.DEATH_GROUPSPAWN:
 	    			if(plugin.usePermissions)
 	    			{
-	    				l = plugin.getGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p.getWorld());
+	    				l = plugin.getGroupSpawn(SpawnControl.permissionHandler.getPrimaryGroup(p.getWorld().getName(), p.getName()), p.getWorld());
 	    			}
 	    			else
 	    			{
@@ -424,7 +422,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.CooldownExempt."+cooldown);
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.CooldownExempt."+cooldown);
     	}
     	
     	return p.isOp();
@@ -456,7 +454,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.spawn.use");
+    		return SpawnControl.permissionHandler.has(p, "SpawnControl.spawn.use");
     	}
     	
     	return true;
@@ -466,7 +464,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.spawn.set");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.spawn.set");
     	}
     	
     	return p.isOp();
@@ -476,7 +474,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.groupspawn.set");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.groupspawn.set");
     	}
     	
     	// Disabled without group support
@@ -487,7 +485,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.groupspawn.use");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.groupspawn.use");
     	}
     	
     	// Disabled without group support
@@ -498,7 +496,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.home.basic");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.home.basic");
     	}
     	
     	return true;
@@ -508,7 +506,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.sethome.basic");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.sethome.basic");
     	}
     	
     	return true;
@@ -518,7 +516,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.sethome.proxy");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.sethome.proxy");
     	}
     	
     	return p.isOp();
@@ -528,7 +526,7 @@ public class SCPlayerListener extends PlayerListener {
     {
     	if(plugin.usePermissions)
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.config");
+    		SpawnControl.permissionHandler.has(p, "SpawnControl.config");
     	}
     	
     	return p.isOp();
