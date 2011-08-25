@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-import com.nijikokun.bukkit.Permissions.Permissions;
+import java.util.List;
 
 /**
  * Handle events for all Player related events
@@ -137,7 +137,7 @@ public class SCPlayerListener extends PlayerListener {
     			String spawnType = "global";
     			
     			// Check permissions availability for group spawn
-    			if(spawnBehavior == SpawnControl.Settings.SPAWN_GROUP && !plugin.usePermissions)
+    			if(spawnBehavior == SpawnControl.Settings.SPAWN_GROUP && !plugin.getPermissions().isActive())
     			{
     				SpawnControl.log.warning("[SpawnControl] Spawn behavior set to 'group' but group support is not available. Using global spawn.");
     				spawnBehavior = SpawnControl.Settings.SPAWN_GLOBAL;
@@ -150,8 +150,21 @@ public class SCPlayerListener extends PlayerListener {
 						plugin.sendHome(p);
 					break;
     				case SpawnControl.Settings.SPAWN_GROUP:
-    					// Send player to group spawn
-    					plugin.sendToGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p);
+                        if(plugin.getPermissions().isActive())
+                        {
+                            // load all of the groups the player is in
+                            List<String> groups = plugin.getPermissions().getGroups(p);
+
+                            if(groups.size() > 0) {
+                                plugin.sendToGroupSpawn(groups.get(0), p);
+                            } else {
+                                plugin.sendToSpawn(p);
+                            }
+                        }
+                        else
+                        {
+                            plugin.sendToSpawn(p);
+                        }
     				break;
     				case SpawnControl.Settings.SPAWN_GLOBAL:
     				default:
@@ -244,9 +257,16 @@ public class SCPlayerListener extends PlayerListener {
     		else
     		{
     			// Get group spawn for player
-    			String group = Permissions.Security.getGroup(p.getWorld().getName(), p.getName());
-	    		SpawnControl.log.info("[SpawnControl] Attempting to send player "+p.getName()+" to group spawn.");
-	        	plugin.sendToGroupSpawn(group, p);
+                if(plugin.getPermissions().isActive())
+	    		{
+                    // load all of the groups the player is in
+                    List<String> groups = plugin.getPermissions().getGroups(p);
+
+                    if(groups.size() > 0) {
+	    		        SpawnControl.log.info("[SpawnControl] Attempting to send player " + p.getName() + " to group spawn.");
+                        plugin.sendToGroupSpawn(groups.get(0), p);
+                    }
+	    		}
     		}
         	return true;
     	}
@@ -351,9 +371,16 @@ public class SCPlayerListener extends PlayerListener {
 	    			plugin.sendHome(p);
 	    			break;
 	    		case SpawnControl.Settings.JOIN_GROUPSPAWN:
-	    			if(plugin.usePermissions)
+	    			if(plugin.getPermissions().isActive())
 	    			{
-	    				plugin.sendToGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p);
+                        // load all of the groups the player is in
+                        List<String> groups = plugin.getPermissions().getGroups(p);
+
+                        if(groups.size() > 0) {
+                            plugin.sendToGroupSpawn(groups.get(0), p);
+                        } else {
+                            plugin.sendToSpawn(p);
+                        }
 	    			}
 	    			else
 	    			{
@@ -380,7 +407,7 @@ public class SCPlayerListener extends PlayerListener {
 	    	SpawnControl.log.info("[SpawnControl] Attempting to respawn player "+p.getName()+" (respawning).");
 	    	
 	    	// Build respawn location
-	    	Location l;
+	    	Location l = null;
 	    	
     		switch(db)
 	    	{
@@ -388,9 +415,20 @@ public class SCPlayerListener extends PlayerListener {
 	    			l = plugin.getHome(p.getName(), p.getWorld());
 	    			break;
 	    		case SpawnControl.Settings.DEATH_GROUPSPAWN:
-	    			if(plugin.usePermissions)
+	    			if(plugin.getPermissions().isActive())
 	    			{
-	    				l = plugin.getGroupSpawn(Permissions.Security.getGroup(p.getWorld().getName(), p.getName()), p.getWorld());
+                        // load all of the groups the player is in
+                        List<String> groups = plugin.getPermissions().getGroups(p);
+
+                        if(groups.size() > 0) {
+                            for(String group : groups) {
+                                if((l = plugin.getGroupSpawn(group, p.getWorld())) != null) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            l = plugin.getGroupSpawn("scglobal", p.getWorld());
+                        }
 	    			}
 	    			else
 	    			{
@@ -422,9 +460,9 @@ public class SCPlayerListener extends PlayerListener {
     
     public boolean isExemptFromCooldowns(Player p, String cooldown)
     {
-    	if(plugin.usePermissions)
+    	if(plugin.getPermissions().isActive())
     	{
-    		return Permissions.Security.permission(p, "SpawnControl.CooldownExempt."+cooldown);
+            return plugin.getPermissions().permission(p, "SpawnControl.CooldownExempt." + cooldown);
     	}
     	
     	return p.isOp();
@@ -454,30 +492,27 @@ public class SCPlayerListener extends PlayerListener {
     
     public boolean canUseSpawn(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.spawn.use");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.spawn.use");
+        }
     	
     	return true;
     }
     
     public boolean canUseSetSpawn(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.spawn.set");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.spawn.set");
+        }
     	
     	return p.isOp();
     }
     
     public boolean canUseSetGroupSpawn(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.groupspawn.set");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.groupspawn.set");
+        }
     	
     	// Disabled without group support
     	return false;
@@ -485,10 +520,9 @@ public class SCPlayerListener extends PlayerListener {
     
     public boolean canUseGroupSpawn(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.groupspawn.use");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.groupspawn.use");
+        }
     	
     	// Disabled without group support
     	return false;
@@ -496,40 +530,36 @@ public class SCPlayerListener extends PlayerListener {
     
     public boolean canUseHomeBasic(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.home.basic");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.home.basic");
+        }
     	
     	return true;
     }
     
     public boolean canUseSetHomeBasic(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.sethome.basic");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.sethome.basic");
+        }
     	
     	return true;
     }
     
     public boolean canUseSetHomeProxy(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.sethome.proxy");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.sethome.proxy");
+        }
     	
     	return p.isOp();
     }
     
     public boolean canUseScConfig(Player p)
     {
-    	if(plugin.usePermissions)
-    	{
-    		return Permissions.Security.permission(p, "SpawnControl.config");
-    	}
+        if(plugin.getPermissions().isActive()) {
+            return plugin.getPermissions().permission(p, "SpawnControl.Config");
+        }
     	
     	return p.isOp();
     }
