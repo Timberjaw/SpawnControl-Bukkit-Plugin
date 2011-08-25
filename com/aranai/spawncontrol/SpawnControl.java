@@ -1,26 +1,36 @@
 package com.aranai.spawncontrol;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.logging.*;
-import java.sql.*;
-
+import com.griefcraft.integration.IPermissions;
+import com.griefcraft.integration.permissions.BukkitPermissions;
+import com.griefcraft.integration.permissions.NijiPermissions;
+import com.griefcraft.integration.permissions.NoPermissions;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event.Priority;
 import org.bukkit.event.Event;
-import org.bukkit.plugin.Plugin;
+import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.plugin.java.JavaPlugin;
 
-// Import permissions package
-import com.nijikokun.bukkit.Permissions.Permissions;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * SpawnControl for Bukkit
@@ -49,8 +59,7 @@ public class SpawnControl extends JavaPlugin {
     protected static String SQLCreateGroupsIndex = "CREATE UNIQUE INDEX groupIndex on `groups` (`name`,`world`);";
     
     // Permissions
-    public static Permissions Permissions = null;
-    public boolean usePermissions = false;
+    private IPermissions permissions;
     
     // Cache variables
     private Hashtable<String,Integer> activePlayerIds;
@@ -230,16 +239,13 @@ public class SpawnControl extends JavaPlugin {
         this.initDB();
         
         // Initialize permissions system
-    	Plugin test = this.getServer().getPluginManager().getPlugin("Permissions");
+        permissions = new NoPermissions();
 
-    	if(SpawnControl.Permissions == null) {
-    	    if(test != null) {
-    	    	SpawnControl.Permissions = (Permissions)test;
-    	    	this.usePermissions = true;
-    	    } else {
-    	    	log.warning("[SpawnControl] Permissions system not enabled, using isOP instead.");
-    	    }
-    	}
+        if(getServer().getPluginManager().getPlugin("PermissionsBukkit") != null) {
+            permissions = new BukkitPermissions();
+        } else if(getServer().getPluginManager().getPlugin("Permissions") != null) {
+            permissions = new NijiPermissions();
+        }
         
         // Register our events
         PluginManager pm = getServer().getPluginManager();
@@ -256,6 +262,13 @@ public class SpawnControl extends JavaPlugin {
         // Enable message
         PluginDescriptionFile pdfFile = this.getDescription();
         log.info( "[SpawnControl] version [" + pdfFile.getVersion() + "] loaded" );
+    }
+
+    /**
+     * @return the permissions api to use
+     */
+    public IPermissions getPermissions() {
+        return permissions;
     }
     
     public void onDisable() {
