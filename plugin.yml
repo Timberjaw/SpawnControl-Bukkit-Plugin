@@ -43,3 +43,59 @@ commands:
   scimportgroupconfig:
     description: Imports group spawns from SpawnControl hMod
     usage: /<command>
+permissions:
+  SpawnControl.*:
+      description: Full access to SpawnControl
+      children:
+          SpawnControl.Config: true
+          SpawnControl.sethome.*: true
+          SpawnControl.home.*: true
+          SpawnControl.spawn.*: true
+          SpawnControl.groupspawn.*: true
+
+  SpawnControl.sethome.*:
+      description: Full access to sethome commands
+      children:
+          SpawnControl.sethome.basic: true
+          SpawnControl.sethome.proxy: true
+
+  SpawnControl.home.*:
+      description: Full access to home commands
+      children:
+          SpawnControl.home.basic: true
+
+  SpawnControl.spawn.*:
+      description: Full access to spawn commands
+      children:
+          SpawnControl.spawn.use: true
+          SpawnControl.spawn.set: true
+
+  SpawnControl.groupspawn.*:
+      description: Full access to groupspawn commands
+      children:
+          SpawnControl.groupspawn.use: true
+          SpawnControl.groupspawn.set: true
+
+  SpawnControl.Config:
+      description: Modify SpawnControl config
+
+  SpawnControl.sethome.proxy:
+      description: Sethome proxy
+
+  SpawnControl.sethome.basic:
+      description: Set your home
+
+  SpawnControl.home.basic:
+      description: Go to your home
+
+  SpawnControl.spawn.use:
+      description: Spawn at your spawn
+
+  SpawnControl.spawn.set:
+      description: Set the spawn
+
+  SpawnControl.groupspawn.use:
+      description: Spawn at your group's spawn
+
+  SpawnControl.groupspawn.set:
+      description: Set your group's spawn
