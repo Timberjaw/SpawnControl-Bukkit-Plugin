@@ -19,13 +19,17 @@ import com.griefcraft.integration.IPermissions;
 import com.griefcraft.integration.permissions.BukkitPermissions;
 import com.griefcraft.integration.permissions.NijiPermissions;
 import com.griefcraft.integration.permissions.NoPermissions;
+import com.griefcraft.integration.permissions.SuperPermsPermissions;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.craftbukkit.entity.CraftHumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,6 +38,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -258,8 +263,24 @@ public class SpawnControl extends JavaPlugin {
 
         if(getServer().getPluginManager().getPlugin("PermissionsBukkit") != null) {
             permissions = new BukkitPermissions();
-        } else if(getServer().getPluginManager().getPlugin("Permissions") != null) {
-            permissions = new NijiPermissions();
+        } else {
+            // Default to Permissions over SuperPermissions, except with SuperpermsBridge
+            Plugin legacy = getServer().getPluginManager().getPlugin("Permissions");
+            if(legacy != null &&
+                    legacy instanceof com.nijikokun.bukkit.Permissions.Permissions &&
+                    // Don't use SuperpermsBridge
+                    !(((com.nijikokun.bukkit.Permissions.Permissions)legacy).getHandler() instanceof com.platymuus.bukkit.permcompat.PermissionHandler)) {
+                permissions = new NijiPermissions();
+            } else {
+                try {
+                    Method method = CraftHumanEntity.class.getDeclaredMethod("hasPermission", String.class);
+                    if (method != null) {
+                        permissions = new SuperPermsPermissions();
+                    }
+                } catch(NoSuchMethodException e) {
+                    // server does not support SuperPerms
+                }
+            }
         }
         
         // Register our events
