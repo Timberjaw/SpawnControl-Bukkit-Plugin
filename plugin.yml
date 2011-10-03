@@ -1,7 +1,8 @@
 name: SpawnControl
 main: com.aranai.spawncontrol.SpawnControl
-version: 0.8.3
+version: 0.8.4
 author: Timberjaw
+softdepend: [PermissionsBukkit]
 commands:
   setspawn:
     description: Sets the global spawn

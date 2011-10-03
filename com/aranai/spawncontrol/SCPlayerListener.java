@@ -368,7 +368,7 @@ public class SCPlayerListener extends PlayerListener {
 	    			else
 	    			{
 	    				// Display current value
-	    				p.sendMessage("Current value for '"+cmd[1]+"': "+plugin.getSetting(cmd[1]));
+	    				p.sendMessage("Current value for '"+cmd[0]+"': "+plugin.getSetting(cmd[0]));
 	    			}
 	    		}
     		}
