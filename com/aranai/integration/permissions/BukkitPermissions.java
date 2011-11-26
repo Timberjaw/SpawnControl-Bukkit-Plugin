@@ -13,9 +13,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.griefcraft.integration.permissions;
+package com.aranai.integration.permissions;
 
-import com.griefcraft.integration.IPermissions;
+import com.aranai.integration.IPermissions;
 import com.platymuus.bukkit.permissions.Group;
 import com.platymuus.bukkit.permissions.PermissionsPlugin;
 import org.bukkit.Bukkit;

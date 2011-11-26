@@ -15,10 +15,11 @@
 
 package com.aranai.spawncontrol;
 
-import com.griefcraft.integration.IPermissions;
-import com.griefcraft.integration.permissions.BukkitPermissions;
-import com.griefcraft.integration.permissions.NijiPermissions;
-import com.griefcraft.integration.permissions.NoPermissions;
+import com.aranai.integration.IPermissions;
+import com.aranai.integration.permissions.BukkitPermissions;
+import com.aranai.integration.permissions.NijiPermissions;
+import com.aranai.integration.permissions.NoPermissions;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;

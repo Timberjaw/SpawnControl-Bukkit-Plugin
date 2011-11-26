@@ -13,26 +13,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.griefcraft.integration.permissions;
+package com.aranai.integration;
 
-import com.griefcraft.integration.IPermissions;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class NoPermissions implements IPermissions {
+public interface IPermissions {
 
-    public boolean isActive() {
-        return false;
-    }
+    /**
+     * @return true if permission handling is supported
+     */
+    public boolean isActive();
 
-    public boolean permission(Player player, String node) {
-        return false;
-    }
+    /**
+     * Check if a player has the specified permission node.
+     *
+     * @param player
+     * @param node
+     * @return
+     */
+    public boolean permission(Player player, String node);
 
-    public List<String> getGroups(Player player) {
-        return new ArrayList<String>();
-    }
+    /**
+     * Get the groups a player belongs to
+     *
+     * @param player
+     * @return
+     */
+    public List<String> getGroups(Player player);
 
 }
